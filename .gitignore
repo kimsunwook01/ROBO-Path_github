@@ -1,0 +1,46 @@
+# 1. Python 캐시 및 컴파일된 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 2. 가상 환경 (Virtual Environments)
+# Conda, venv 등 가상 환경 폴더가 깃허브에 올라가는 것을 방지합니다.
+.venv/
+venv/
+env/
+envs/
+conda-env/
+
+# 3. 환경 변수 및 보안 파일
+# API 키나 비밀번호가 들어있는 파일은 절대 Git에 올라가면 안 됩니다.
+.env
+.env.*
+*.secret
+
+# 4. Jupyter Notebook
+.ipynb_checkpoints/
+
+# 5. IDE 및 에디터 설정
+# 개발자마다 설정이 다르므로 공유하지 않는 것이 좋습니다.
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 6. OS(운영체제) 생성 파일
+# Mac이나 Windows에서 자동으로 생성하는 숨김 파일들입니다.
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# 7. 빌드 및 배포, 로그 파일
+build/
+dist/
+*.egg-info/
+*.egg
+*.log
