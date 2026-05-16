@@ -39,9 +39,10 @@
 - [x] 클린 아키텍처 기반의 4계층(`domain`, `application`, `infrastructure`, `presentation`) 폴더 구조 세팅
 - [x] Supabase 클라우드 데이터베이스 초기 DDL 및 스키마 설계 완료
 - [x] Supabase 초기화용 마이그레이션 SQL 코드(`supabase/migrations/20260516190000_init_schema.sql`) 작성 및 로컬 Git 커밋 완료
+- [x] **DB 구축 및 연동 (사용자/AI 작업):** Supabase 콘솔에서 프로젝트 생성 후 GitHub Actions 기반의 마이그레이션 자동 배포 파이프라인 구축 완료
+- [x] 모든 테이블에 대한 Row Level Security (RLS) 활성화 및 익명 읽기 허용 정책 마이그레이션 SQL 코드 작성 완료
 
 **🚀 [현재 대기 중인 작업 (Next Action)]**
-- [x] **DB 구축 및 연동 (사용자/AI 작업):** Supabase 콘솔에서 프로젝트 생성 후 GitHub Actions 기반의 마이그레이션 자동 배포 파이프라인 구축 완료
 - [ ] **스키마 및 모델 작성:** `src/domain/models/` 경로에 DB 테이블 구조와 맵핑되는 `Pydantic` 검증 클래스 만들기
 - [ ] **Supabase Client 연결:** `src/infrastructure/database/` 에 파이썬 통신 모듈(어댑터) 작성하기
 
