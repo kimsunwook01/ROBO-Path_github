@@ -48,6 +48,10 @@
   - [x] 2-2. `Node` 계층 (Base, Discovered) Pydantic 모델 작성 (상속 구조 및 타입 검증)
   - [x] 2-3. `Edge` 및 통계 데이터(platform_stats JSONB) Pydantic 모델 작성
   - [x] 2-4. `MissionLog` 및 `Incident` 피드백 Pydantic 모델 작성 (값의 범위 무결성 검증 포함)
-- [ ] **Supabase Client 연결:** `src/infrastructure/database/` 에 파이썬 통신 모듈(어댑터) 작성하기
+- [x] **3. Supabase Client 및 의존성 주입 구조 설계 (`src/infrastructure/`, `src/application/`)**
+- [x] 3-1. `requirements.txt` 업데이트 및 패키지 설치 완료 (`supabase`, `python-dotenv`)
+  - [x] 3-2. `src/infrastructure/database/client.py`에 Supabase 연결용 싱글톤 클라이언트 작성
+  - [x] 3-3. `src/application/interfaces/`에 Repository 통신 규약(Protocol) 작성
+  - [x] 3-4. `src/infrastructure/database/`에 Supabase용 Repository 구현체 작성
 
 > **Update Rule:** 이 파일은 프로젝트의 주요 마일스톤이 달성되거나 아키텍처 정책이 변경될 때마다 AI에 의해 갱신되어야 합니다.
