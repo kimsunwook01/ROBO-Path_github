@@ -6,7 +6,7 @@ from uuid import UUID
 
 from src.domain.models.node import Node
 from src.domain.models.edge import Edge, PlatformStat
-from src.domain.models.robot import Robot
+from src.domain.models.metadata import Robot
 from src.domain.algorithms.cost_calculator import calculate_edge_cost
 
 def heuristic(node_a: Node, node_b: Node) -> float:
@@ -87,6 +87,11 @@ def a_star_search(start_node: Node, goal_node: Node, nodes: List[Node], edges: L
     while open_set:
         # 가장 비용(f_score)이 낮은 노드를 꺼냄
         current_f, _, current_id = heapq.heappop(open_set)
+        
+        # [BUG FIX] Stale entry 스킵: heapq는 항목 삭제를 지원하지 않으므로 lazy deletion 방식을 사용.
+        # 큐에서 꺼낸 f_score가 현재 기록된 최적 g_score + h보다 크면 이미 더 나은 경로로 처리된 낡은 항목이므로 건너뜀.
+        if current_f > f_score[current_id]:
+            continue
         
         # 목적지에 도달한 경우
         if current_id == goal_node.id:
