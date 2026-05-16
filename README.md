@@ -46,13 +46,14 @@ conda activate robopath
 ```text
 ROBO-Path_project/
 ├── 0_Document/                  # 기획 및 아키텍처 설계 문서 등
-│   └── ROBO-Path_Design_Report.md
-├── src/                         # 핵심 소스 코드 (향후 구현 예정)
-│   ├── algorithms/              # A* 경로 탐색 알고리즘 등
-│   ├── dashboard/               # Streamlit 관제 웹 UI
-│   ├── database/                # Supabase 클라이언트 및 Pydantic 데이터 모델
-│   └── ros2_bridge/             # WebSocket - ROS2 통신 스크립트
-├── tests/                       # 단위/통합 테스트 스크립트 (향후 구현 예정)
+│   ├── ROBO-Path_Design_Report.md
+│   └── ROBO-Path_Software_Architecture.md # 클린 아키텍처 설계서
+├── src/                         # 핵심 소스 코드 (클린 아키텍처 기반)
+│   ├── domain/                  # 비즈니스 로직 및 Pydantic 데이터 모델 (의존성 없음)
+│   ├── application/             # Use Case 및 인터페이스(Protocol) 정의
+│   ├── infrastructure/          # 외부 기술 구현체 (Supabase, Gemini API 등)
+│   └── presentation/            # UI 및 외부 진입점 (Streamlit, ROS2 Bridge)
+├── tests/                       # 단위/통합 테스트 스크립트
 ├── Command_list.md              # 주요 명령어 모음집
 ├── environment.yml              # Conda 환경 의존성
 ├── requirements.txt             # Pip 의존성 목록
