@@ -38,20 +38,27 @@
 - [x] .env 파일 추적 해제 및 Git 기초 설정 완료
 - [x] 클린 아키텍처 기반의 4계층(`domain`, `application`, `infrastructure`, `presentation`) 폴더 구조 세팅
 - [x] Supabase 클라우드 데이터베이스 초기 DDL 및 스키마 설계 완료
-- [x] Supabase 초기화용 마이그레이션 SQL 코드(`supabase/migrations/20260516190000_init_schema.sql`) 작성 및 로컬 Git 커밋 완료
-- [x] **DB 구축 및 연동 (사용자/AI 작업):** Supabase 콘솔에서 프로젝트 생성 후 GitHub Actions 기반의 마이그레이션 자동 배포 파이프라인 구축 완료
+- [x] Supabase 초기화용 마이그레이션 SQL 코드(`supabase/migrations/...`) 작성 및 로컬 Git 커밋 완료
+- [x] **DB 구축 및 연동:** Supabase 콘솔에서 프로젝트 생성 후 GitHub Actions 기반의 마이그레이션 자동 배포 파이프라인 구축 완료
 - [x] 모든 테이블에 대한 Row Level Security (RLS) 활성화 및 익명 읽기 허용 정책 마이그레이션 SQL 코드 작성 완료
+- [x] **2. 핵심 도메인 모델 작성 (`src/domain/models/`)**
+  - `MapMetadata`, `Robot`, `Node` 계층, `Edge`, `MissionLog`, `Incident` 등 Pydantic 기반 무결성 검증 모델 작성 완료
+- [x] **3. Supabase Client 및 의존성 주입 구조 설계 (`src/infrastructure/`, `src/application/`)**
+  - Supabase 연결 싱글톤 클라이언트, Repository 통신 규약(Protocol), Supabase용 Repository 구현체 작성 완료
+- [x] **4. 순수 도메인 알고리즘 설계 및 구현 (`src/domain/algorithms/`)**
+  - 플랫폼 가중치 기반 Edge Cost 산출, A* 경로 탐색, 하드웨어 피드백 통계 누적(Aggregation) 로직 구현 완료
 
 **🚀 [현재 대기 중인 작업 (Next Action)]**
-- [x] **2. 핵심 도메인 모델 작성 (`src/domain/models/`)**
-  - [x] 2-1. `MapMetadata` 및 `Robot` 등 기초 메타데이터 Pydantic 모델 작성
-  - [x] 2-2. `Node` 계층 (Base, Discovered) Pydantic 모델 작성 (상속 구조 및 타입 검증)
-  - [x] 2-3. `Edge` 및 통계 데이터(platform_stats JSONB) Pydantic 모델 작성
-  - [x] 2-4. `MissionLog` 및 `Incident` 피드백 Pydantic 모델 작성 (값의 범위 무결성 검증 포함)
-- [x] **3. Supabase Client 및 의존성 주입 구조 설계 (`src/infrastructure/`, `src/application/`)**
-- [x] 3-1. `requirements.txt` 업데이트 및 패키지 설치 완료 (`supabase`, `python-dotenv`)
-  - [x] 3-2. `src/infrastructure/database/client.py`에 Supabase 연결용 싱글톤 클라이언트 작성
-  - [x] 3-3. `src/application/interfaces/`에 Repository 통신 규약(Protocol) 작성
-  - [x] 3-4. `src/infrastructure/database/`에 Supabase용 Repository 구현체 작성
+- [ ] **5. 애플리케이션 서비스 계층 구현 (`src/application/services/`)**
+  - [ ] 도메인 알고리즘(A*)과 인프라(Repository)를 연결하여 경로를 탐색하는 `PathPlanningService` 작성
+  - [ ] 주행 로그가 삽입되면 엣지 통계를 갱신하는 `FeedbackAggregationService` 작성
+- [ ] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
+  - [ ] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
+- [ ] **7. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
+  - [ ] Streamlit 기반의 노드/엣지 지도 시각화 대시보드 뼈대 작성
+  - [ ] A* 경로 탐색 시뮬레이터 폼 및 결과 시각화
+- [ ] **8. 에지 서버(라즈베리파이) 및 통신 구현 (`src/infrastructure/storage/`, `src/presentation/ros2_bridge/`)**
+  - [ ] 로컬 SSD 스토리지 파일(PCD, 원천 로그) 관리 모듈 구현
+  - [ ] 웹소켓 기반 ROS2 제어 브릿지 스크립트 작성
 
 > **Update Rule:** 이 파일은 프로젝트의 주요 마일스톤이 달성되거나 아키텍처 정책이 변경될 때마다 AI에 의해 갱신되어야 합니다.
