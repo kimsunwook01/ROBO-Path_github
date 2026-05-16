@@ -46,6 +46,7 @@ conda activate robopath
 ```text
 ROBO-Path_project/
 ├── 0_Document/                  # 기획 및 아키텍처 설계 문서 등
+│   ├── AI_CONTEXT.md            # AI 어시스턴트 컨텍스트 유지용 지침서
 │   ├── ROBO-Path_Design_Report.md
 │   └── ROBO-Path_Software_Architecture.md # 클린 아키텍처 설계서
 ├── src/                         # 핵심 소스 코드 (클린 아키텍처 기반)
