@@ -43,7 +43,11 @@
 - [x] 모든 테이블에 대한 Row Level Security (RLS) 활성화 및 익명 읽기 허용 정책 마이그레이션 SQL 코드 작성 완료
 
 **🚀 [현재 대기 중인 작업 (Next Action)]**
-- [ ] **스키마 및 모델 작성:** `src/domain/models/` 경로에 DB 테이블 구조와 맵핑되는 `Pydantic` 검증 클래스 만들기
+- [x] **2. 핵심 도메인 모델 작성 (`src/domain/models/`)**
+  - [x] 2-1. `MapMetadata` 및 `Robot` 등 기초 메타데이터 Pydantic 모델 작성
+  - [x] 2-2. `Node` 계층 (Base, Discovered) Pydantic 모델 작성 (상속 구조 및 타입 검증)
+  - [x] 2-3. `Edge` 및 통계 데이터(platform_stats JSONB) Pydantic 모델 작성
+  - [x] 2-4. `MissionLog` 및 `Incident` 피드백 Pydantic 모델 작성 (값의 범위 무결성 검증 포함)
 - [ ] **Supabase Client 연결:** `src/infrastructure/database/` 에 파이썬 통신 모듈(어댑터) 작성하기
 
 > **Update Rule:** 이 파일은 프로젝트의 주요 마일스톤이 달성되거나 아키텍처 정책이 변경될 때마다 AI에 의해 갱신되어야 합니다.
