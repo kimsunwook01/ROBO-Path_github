@@ -38,9 +38,10 @@
 - [x] .env 파일 추적 해제 및 Git 기초 설정 완료
 - [x] 클린 아키텍처 기반의 4계층(`domain`, `application`, `infrastructure`, `presentation`) 폴더 구조 세팅
 - [x] Supabase 클라우드 데이터베이스 초기 DDL 및 스키마 설계 완료
+- [x] Supabase 초기화용 마이그레이션 SQL 코드(`supabase/migrations/20260516190000_init_schema.sql`) 작성 및 로컬 Git 커밋 완료
 
 **🚀 [현재 대기 중인 작업 (Next Action)]**
-- [ ] **DB 구축 (사용자 작업):** Supabase 웹 콘솔에서 프로젝트를 생성하고, `SUPABASE_URL` 과 `SUPABASE_KEY` 를 `.env` 파일에 기입하기
+- [ ] **DB 구축 및 연동 (사용자 작업):** Supabase 콘솔에서 프로젝트 생성 후 GitHub 저장소를 연동하여 마이그레이션 SQL 코드를 자동 Pull(또는 수동 실행)하고, `.env`에 `SUPABASE_URL`과 `SUPABASE_KEY` 기입하기
 - [ ] **스키마 및 모델 작성:** `src/domain/models/` 경로에 DB 테이블 구조와 맵핑되는 `Pydantic` 검증 클래스 만들기
 - [ ] **Supabase Client 연결:** `src/infrastructure/database/` 에 파이썬 통신 모듈(어댑터) 작성하기
 
