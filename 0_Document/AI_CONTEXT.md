@@ -58,9 +58,9 @@
   - [ ] Streamlit 기반의 노드/엣지 지도 시각화 대시보드 뼈대 작성
   - [ ] A* 경로 탐색 시뮬레이터 폼 및 결과 시각화
 - [ ] **8. 에지 서버(라즈베리파이) 인프라 및 통신 구현 (`src/infrastructure/storage/`, `src/presentation/ros2_bridge/`)**
-  - [ ] [Phase 1] GitHub Actions Self-Hosted Runner 기반 CI/CD 자동 배포 파이프라인 구축 (**진행 중**)
-  - [ ] [Phase 2] 라즈베리파이 1TB SSD 마운트 권한 및 파이썬 가상환경(venv) 세팅
-  - [ ] [Phase 3] 로컬 SSD 스토리지 파일(PCD, 원천 로그) 관리용 FastAPI 엔드포인트 구현
+  - [x] [Phase 1] GitHub Actions Self-Hosted Runner 기반 CI/CD 자동 배포 파이프라인 구축 (**완료** - Runner가 Systemd 서비스로 등록, 부팅 시 자동 실행)
+  - [x] [Phase 2] 라즈베리파이 1TB SSD 마운트 권한 및 파이썬 가상환경(venv) 세팅 (**완료** - `/home/rpi5/ROBO-Path_project/venv/` 구성)
+  - [ ] [Phase 3] 로컬 SSD 스토리지 파일(PCD, 원천 로그) 관리용 FastAPI 엔드포인트 구현 (**다음 작업**)
   - [ ] [Phase 4] Systemd 무중단 서비스 데몬 등록 및 Nginx 리버스 프록시 라우팅 설정
   - [ ] [Phase 5] 웹소켓 기반 ROS2 제어 브릿지 스크립트 작성 및 통신망 구축
 
