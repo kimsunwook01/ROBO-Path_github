@@ -16,13 +16,13 @@ jobs:
       # Step 1: 최신 코드 동기화
       - name: Pull latest code
         run: |
-          cd /home/pi/ROBO-Path_project
+          cd $HOME/ROBO-Path_project
           git pull origin main
 
       # Step 2: GitHub Secrets에서 .env 파일 생성 (기밀 정보 주입)
       - name: Write .env file from Secrets
         run: |
-          cat > /home/pi/ROBO-Path_project/.env << 'EOF'
+          cat > $HOME/ROBO-Path_project/.env << 'EOF'
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
@@ -32,17 +32,17 @@ jobs:
       # Step 3: Python 패키지 업데이트
       - name: Update Python dependencies
         run: |
-          source /home/pi/ROBO-Path_project/venv/bin/activate
-          pip install -r /home/pi/ROBO-Path_project/requirements.txt
+          source $HOME/ROBO-Path_project/venv/bin/activate
+          pip install -r $HOME/ROBO-Path_project/requirements.txt
 
       # Step 4: 시스템 설정 파일 동기화 (Systemd, Nginx)
       - name: Sync system config files
         run: |
-          sudo cp /home/pi/ROBO-Path_project/config/pi_services/robo-path-api.service \
+          sudo cp $HOME/ROBO-Path_project/config/pi_services/robo-path-api.service \
                   /etc/systemd/system/robo-path-api.service
-          sudo cp /home/pi/ROBO-Path_project/config/pi_services/robo-path-web.service \
+          sudo cp $HOME/ROBO-Path_project/config/pi_services/robo-path-web.service \
                   /etc/systemd/system/robo-path-web.service
-          sudo cp /home/pi/ROBO-Path_project/config/nginx/robo-path.conf \
+          sudo cp $HOME/ROBO-Path_project/config/nginx/robo-path.conf \
                   /etc/nginx/sites-available/robo-path
           sudo ln -sf /etc/nginx/sites-available/robo-path \
                       /etc/nginx/sites-enabled/robo-path
