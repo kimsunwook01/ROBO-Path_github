@@ -1,0 +1,16 @@
+[Unit]
+Description=ROBO-Path FastAPI Storage Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/ROBO-Path_project
+ExecStart=/home/pi/ROBO-Path_project/venv/bin/uvicorn src.infrastructure.storage.api:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

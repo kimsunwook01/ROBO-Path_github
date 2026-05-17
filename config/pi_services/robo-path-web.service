@@ -1,0 +1,16 @@
+[Unit]
+Description=ROBO-Path Streamlit Dashboard Web Server
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/ROBO-Path_project
+ExecStart=/home/pi/ROBO-Path_project/venv/bin/streamlit run src/presentation/dashboard/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
