@@ -15,24 +15,73 @@
 
 디렉토리 구조는 아키텍처의 의도를 명확히 반영합니다. 의존성은 항상 **바깥쪽(Infrastructure, UI)에서 안쪽(Domain, Core)**으로만 향해야 합니다.
 
+### 2.1 소프트웨어 계층 구조 (`src/`)
+
+핵심 애플리케이션 코드의 4계층 구조입니다. 의존성은 항상 **바깥쪽(Infrastructure, UI)에서 안쪽(Domain)**으로만 향해야 합니다.
+
 ```text
 src/
-├── domain/                      # 1. 도메인 계층 (가장 안쪽, 의존성 없음)
-│   ├── models/                  # 순수 Pydantic 데이터 모델 (Node, Edge, Mission)
-│   └── algorithms/              # A* 알고리즘 로직 (DB 통신 코드 절대 포함 불가)
+├── domain/                      # 1. 도메인 계층 (가장 안쪽, 외부 의존성 없음) ✅ 구현 완료
+│   ├── models/                  # 순수 Pydantic 데이터 모델
+│   │   ├── edge.py              # Edge 모델 (platform_stats JSONB 포함)
+│   │   ├── node.py              # Node, BaseLocation, DiscoveredNode 계층 모델
+│   │   ├── log.py               # MissionLog, Incident 모델
+│   │   └── metadata.py          # MapMetadata, Robot 모델
+│   └── algorithms/              # 순수 도메인 알고리즘 (I/O 코드 절대 포함 불가)
+│       ├── a_star.py            # 플랫폼 가중치 기반 A* 경로 탐색
+│       ├── cost_calculator.py   # Edge 비용 함수 (부하율/안정성/효율성 가중합)
+│       └── statistics.py        # 하드웨어 피드백 통계 누적(Aggregation) 로직
 │
 ├── application/                 # 2. 애플리케이션 계층 (Use Case)
-│   ├── interfaces/              # 외부 인프라가 구현해야 할 인터페이스 (Repository Protocol)
-│   └── services/                # 도메인 모델과 인터페이스를 조합해 비즈니스 흐름 제어
+│   ├── interfaces/              # 외부 인프라가 구현해야 할 Repository Protocol ✅
+│   │   ├── edge_repository.py
+│   │   └── node_repository.py
+│   └── services/                # 도메인 + 인터페이스 조합 비즈니스 흐름 제어 🔲 미구현
 │
-├── infrastructure/              # 3. 인프라 계층 (가장 바깥쪽, 외부 기술 구현체)
-│   ├── database/                # Supabase 클라이언트 및 Repository 인터페이스 구현체
-│   ├── storage/                 # 라즈베리파이 로컬 파일 시스템 제어 구현체
-│   └── llm/                     # Google Gemini API 호출 구현체
+├── infrastructure/              # 3. 인프라 계층 (외부 기술 구현체)
+│   ├── database/                # Supabase 클라이언트 및 Repository 구현체 ✅
+│   │   ├── client.py            # Supabase 연결 싱글톤 클라이언트
+│   │   ├── supabase_edge_repo.py
+│   │   └── supabase_node_repo.py
+│   ├── storage/                 # 라즈베리파이 로컬 파일 시스템 제어 구현체 🔲 미구현
+│   │   └── api.py               # (예정) FastAPI 스토리지 서버 진입점
+│   └── llm/                     # Google Gemini API 호출 구현체 🔲 미구현
 │
 └── presentation/                # 4. 프레젠테이션 계층 (UI 및 진입점)
-    ├── dashboard/               # Streamlit 관제 웹 화면 (오직 application/services만 호출)
-    └── ros2_bridge/             # WebSocket-ROS2 통신 서버
+    ├── dashboard/               # Streamlit 관제 웹 화면 🔲 미구현
+    │   └── app.py               # (예정) 관제 대시보드 진입점
+    └── ros2_bridge/             # WebSocket-ROS2 제어 브릿지 🔲 미구현
+        └── bridge.py            # (예정) 웹소켓 서버 진입점
+```
+
+### 2.2 전체 프로젝트 루트 구조
+
+에지 서버 인프라 파일까지 포함한 전체 리포지토리 루트 구조입니다.
+
+```text
+ROBO-Path_project/               # 리포지토리 루트
+├── .github/
+│   └── workflows/
+│       ├── supabase-migrations.yml  # Supabase DB 마이그레이션 자동 배포 ✅
+│       └── deploy-to-pi.yml         # 라즈베리파이 Self-Hosted Runner 배포 🔲 미구현
+│
+├── config/                      # 라즈베리파이 전용 시스템 설정 (Git 버전 관리됨)
+│   ├── pi_services/
+│   │   ├── robo-path-api.service    # FastAPI Systemd 서비스 유닛
+│   │   └── robo-path-web.service    # Streamlit Systemd 서비스 유닛
+│   └── nginx/
+│       └── robo-path.conf           # Nginx 리버스 프록시 설정
+│
+├── scripts/                     # 파이 유지보수 셸 스크립트 (Git 버전 관리됨)
+│   └── snapshot_env.sh              # apt/pip 환경 스냅샷 저장
+│
+├── src/                         # 소프트웨어 계층 구조 (위 2.1 참고)
+├── supabase/                    # Supabase 마이그레이션 SQL 파일
+├── tests/                       # 테스트 코드
+├── 0_Document/                  # 프로젝트 기술 문서
+├── requirements.txt             # Python 패키지 목록 (워크스테이션 + 파이 공용)
+├── environment.yml              # Conda 환경 정의
+└── .env                         # 환경 변수 (Git 추적 제외)
 ```
 
 ---
