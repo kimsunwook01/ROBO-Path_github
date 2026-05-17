@@ -12,22 +12,78 @@
 ---
 
 ## 2. Phase 1: CI/CD 자동 배포 파이프라인 구축 (GitHub Actions)
-에지 서버에 직접 SSH로 접속해 코드를 수정하거나 `git pull`을 수행하는 번거로움을 없애기 위해, GitHub 푸시 이벤트에 반응하여 코드를 자동 동기화하고 서버를 재시작하는 파이프라인을 1순위로 구축합니다.
+에지 서버에 직접 SSH로 접속해 수동으로 코드를 갱신하는 번거로움을 없애기 위해, GitHub 푸시 이벤트에 반응하여 코드를 자동 동기화하고 서버를 재시작하는 파이프라인을 가장 먼저 구축합니다.
 
-### 2.1 Self-Hosted Runner 설치
+### 2.1 라즈베리파이 최초 1회 환경 구성 (SSH 직접 접속)
+
+Runner를 설치하기 전에 파이에 기반 환경을 먼저 구성합니다.
+
+**① GitHub SSH 키 등록 (git pull 인증)**
+```bash
+# SSH 키 생성
+ssh-keygen -t ed25519 -C "robo-path-pi" -f ~/.ssh/github_pi
+
+# 공개 키 출력 → GitHub > Settings > SSH and GPG keys > New SSH key 에 등록
+cat ~/.ssh/github_pi.pub
+
+# SSH 설정 파일 작성
+cat >> ~/.ssh/config << 'EOF'
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_pi
+EOF
+```
+
+**② 리포지토리 클론 및 가상환경 구성**
+```bash
+# 프로젝트 클론
+git clone git@github.com:kimsunwook01/ROBO-Path_github.git ~/ROBO-Path_project
+cd ~/ROBO-Path_project
+
+# Python 가상환경 생성 및 패키지 설치
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
+```
+
+**③ Runner용 sudo 권한 설정 (비밀번호 없이 서비스 제어)**
+
+CI/CD 워크플로우가 `systemctl`, `nginx`, `cp` 명령어를 자동으로 실행하려면 passwordless sudo가 필요합니다.
+```bash
+# sudoers 파일에 허용 명령어 추가
+sudo visudo -f /etc/sudoers.d/robo-path-runner
+```
+아래 내용을 입력 후 저장 (`pi` 부분을 실제 파이 계정명으로 변경):
+```
+pi ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/nginx, /bin/cp, /usr/bin/ln
+```
+
+### 2.2 Self-Hosted Runner 설치
 1. 라즈베리파이에 SSH로 접속합니다.
-2. GitHub Repository의 **Settings > Actions > Runners** 메뉴에서 'New self-hosted runner'를 생성합니다.
-3. 아키텍처(Linux, ARM64)에 맞는 다운로드 및 설정 명령어를 파이 터미널에서 순차적으로 실행합니다.
-4. `./svc.sh install` 및 `./svc.sh start` 명령어를 통해 러너를 백그라운드 서비스로 등록하여 파이 부팅 시 항상 깃허브의 명령을 수신 대기하도록 만듭니다.
+2. GitHub Repository의 **Settings > Actions > Runners** 메뉴에서 **`New self-hosted runner`** 버튼을 클릭합니다.
+3. OS는 **`Linux`**, Architecture는 **`ARM64`** 를 선택합니다.
+4. 화면에 출력되는 `Download` 및 `Configure` 명령어 블록을 파이 터미널에 순서대로 복사하여 실행합니다.
+5. Runner를 백그라운드 서비스로 등록하여 파이 부팅 시 자동으로 GitHub를 감청하도록 만듭니다:
+```bash
+# actions-runner 디렉토리 안에서 실행
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
 
-### 2.2 배포 워크플로우 (.github/workflows/deploy-to-pi.yml) 작성
-- `main` 브랜치에 코드가 푸시되면 트리거되도록 설정합니다.
-- 워크플로우는 라즈베리파이에 설치된 러너 환경(`runs-on: self-hosted`)에서 실행됩니다.
-- **실행 스크립트 로직:**
-  1. 최신 코드 `git pull`
-  2. 파이썬 가상환경 활성화 및 `pip install -r requirements.txt` 실행
-  3. `sudo systemctl restart robo-path-api` (스토리지 서버 재시작)
-  4. `sudo systemctl restart robo-path-web` (웹 서버 재시작)
+### 2.3 배포 워크플로우 (`.github/workflows/deploy-to-pi.yml`) ✅ 완료
+
+`main` 브랜치 푸시 시 Self-Hosted Runner가 자동으로 실행하는 워크플로우입니다. 이미 리포지토리에 작성되어 있습니다.
+
+**실행 순서:**
+1. `git pull origin main` — 최신 코드 동기화
+2. GitHub Secrets에서 `.env` 파일 생성 (API 키 자동 주입)
+3. `pip install -r requirements.txt` — 패키지 업데이트
+4. `config/` 파일을 시스템 경로에 복사 및 `systemctl daemon-reload`
+5. `robo-path-api`, `robo-path-web` 서비스 재시작
+6. Nginx 설정 검증 및 리로드
+7. 배포 결과 상태 검증 (실패 시 워크플로우 오류로 표시)
 
 ---
 

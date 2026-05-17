@@ -1,0 +1,70 @@
+name: Deploy to Raspberry Pi Edge Server
+
+# main 브랜치에 푸시되거나, GitHub Actions 탭에서 수동 실행 시 트리거
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # 라즈베리파이에 설치된 Self-Hosted Runner에서 실행
+    runs-on: self-hosted
+
+    steps:
+      # Step 1: 최신 코드 동기화
+      - name: Pull latest code
+        run: |
+          cd /home/pi/ROBO-Path_project
+          git pull origin main
+
+      # Step 2: GitHub Secrets에서 .env 파일 생성 (기밀 정보 주입)
+      - name: Write .env file from Secrets
+        run: |
+          cat > /home/pi/ROBO-Path_project/.env << 'EOF'
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          STORAGE_BASE_PATH=/mnt/ssd/robo-path-data
+          EOF
+
+      # Step 3: Python 패키지 업데이트
+      - name: Update Python dependencies
+        run: |
+          source /home/pi/ROBO-Path_project/venv/bin/activate
+          pip install -r /home/pi/ROBO-Path_project/requirements.txt
+
+      # Step 4: 시스템 설정 파일 동기화 (Systemd, Nginx)
+      - name: Sync system config files
+        run: |
+          sudo cp /home/pi/ROBO-Path_project/config/pi_services/robo-path-api.service \
+                  /etc/systemd/system/robo-path-api.service
+          sudo cp /home/pi/ROBO-Path_project/config/pi_services/robo-path-web.service \
+                  /etc/systemd/system/robo-path-web.service
+          sudo cp /home/pi/ROBO-Path_project/config/nginx/robo-path.conf \
+                  /etc/nginx/sites-available/robo-path
+          sudo ln -sf /etc/nginx/sites-available/robo-path \
+                      /etc/nginx/sites-enabled/robo-path
+          sudo systemctl daemon-reload
+
+      # Step 5: 애플리케이션 서비스 재시작
+      - name: Restart application services
+        run: |
+          sudo systemctl restart robo-path-api
+          sudo systemctl restart robo-path-web
+
+      # Step 6: Nginx 설정 검증 후 리로드
+      - name: Reload Nginx
+        run: sudo nginx -t && sudo systemctl reload nginx
+
+      # Step 7: 배포 결과 검증
+      - name: Verify deployment
+        run: |
+          sleep 3
+          sudo systemctl is-active --quiet robo-path-api \
+            && echo "✅ [OK] FastAPI 스토리지 서버 정상 구동" \
+            || (echo "❌ [FAIL] FastAPI 서버 구동 실패" && exit 1)
+          sudo systemctl is-active --quiet robo-path-web \
+            && echo "✅ [OK] Streamlit 웹 서버 정상 구동" \
+            || (echo "❌ [FAIL] Streamlit 서버 구동 실패" && exit 1)
