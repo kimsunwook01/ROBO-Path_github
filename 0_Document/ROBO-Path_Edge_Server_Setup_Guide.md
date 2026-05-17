@@ -102,3 +102,210 @@ server {
 기본적인 서버 가동 및 통신 시스템이 모두 검증된 이후, Windows 및 Mac 워크스테이션에서 마우스 클릭만으로 1TB SSD 파일에 직접 접근할 수 있도록 Samba 프로토콜을 설정합니다.
 - `sudo apt install samba`
 - `/etc/samba/smb.conf` 에 `/mnt/ssd/robo-path-data` 경로 마운트 추가 및 사용자 인증 설정.
+
+---
+
+## 7. 라즈베리파이 디렉터리 구조
+라즈베리파이 내부의 파일 시스템은 크게 **프로젝트 코드 영역** (홈 디렉터리)과 **대용량 데이터 영역** (SSD 마운트)으로 분리하여 관리합니다.
+
+### 7.1 전체 디렉터리 트리
+```
+/
+├── home/
+│   └── pi/
+│       └── ROBO-Path_project/               # GitHub에서 클론된 프로젝트 루트
+│           ├── .github/
+│           │   └── workflows/
+│           │       ├── supabase-migrations.yml  # 기존 Supabase 마이그레이션 워크플로우
+│           │       └── deploy-to-pi.yml         # (신규) CI/CD 배포 워크플로우
+│           ├── src/
+│           │   ├── domain/                  # 핵심 도메인 로직 (알고리즘, 모델)
+│           │   │   ├── algorithms/          # A*, cost_calculator, statistics
+│           │   │   └── models/              # Edge, Node, Log, Metadata 등 Pydantic 모델
+│           │   ├── application/             # 유즈케이스 서비스
+│           │   │   ├── interfaces/          # Repository 프로토콜 정의
+│           │   │   └── services/            # PathPlanningService 등 (미구현)
+│           │   ├── infrastructure/
+│           │   │   ├── database/            # Supabase 클라이언트 및 Repository 구현체
+│           │   │   ├── storage/             # (신규) FastAPI 스토리지 서버 진입점
+│           │   │   │   └── api.py
+│           │   │   └── llm/                 # (미구현) Gemini API 연동
+│           │   └── presentation/
+│           │       ├── dashboard/           # (미구현) Streamlit 관제 대시보드
+│           │       │   └── app.py
+│           │       └── ros2_bridge/         # (미구현) WebSocket-ROS2 브릿지
+│           │           └── bridge.py
+│           ├── config/                      # 라즈베리파이 전용 시스템 설정 파일 (Git 버전 관리됨)
+│           │   ├── pi_services/             # Systemd 서비스 유닛 파일 템플릿
+│           │   │   ├── robo-path-api.service
+│           │   │   └── robo-path-web.service
+│           │   └── nginx/                   # Nginx 리버스 프록시 설정 파일
+│           │       └── robo-path.conf
+│           ├── scripts/                     # 파이 유지보수 셸 스크립트 (Git 버전 관리됨)
+│           │   └── snapshot_env.sh          # apt/pip 환경 스냅샷 저장 스크립트
+│           ├── venv/                        # Python 가상환경 (Git 추적 제외)
+│           ├── requirements.txt             # Python 패키지 목록 (현재 존재)
+│           └── .env                         # 환경 변수 (Git 추적 제외)
+│
+└── mnt/
+    └── ssd/
+        └── robo-path-data/                  # 1TB SSD 마운트 (대용량 데이터 전용)
+            ├── pcd/                         # 3D 포인트 클라우드 맵 파일 (.pcd)
+            │   └── YYYY-MM-DD/              # 날짜별 서브 디렉터리로 정리
+            ├── logs/                        # 주행 로그 파일 (.csv)
+            │   └── YYYY-MM-DD/
+            └── backups/                     # 설정 파일 백업 스냅샷 (§8.3 참고)
+                └── env_snapshot_YYYYMMDD/
+```
+
+### 7.2 디렉터리 분리 원칙
+
+| 영역 | 경로 | 관리 방식 | 비고 |
+|---|---|---|---|
+| 프로젝트 코드 | `~/ROBO-Path_project/` | Git (GitHub) | 자동 배포 대상 |
+| 시스템 설정 파일 | `~/ROBO-Path_project/config/` | Git 추적 + 심볼릭 링크 | Systemd, Nginx 설정 포함 |
+| 유지보수 스크립트 | `~/ROBO-Path_project/scripts/` | Git 추적 | 환경 스냅샷 등 관리 도구 |
+| 파이썬 가상환경 | `~/ROBO-Path_project/venv/` | `.gitignore` 제외, `requirements.txt`로 재현 | 직접 커밋 금지 |
+| 환경 변수 | `~/ROBO-Path_project/.env` | `.gitignore` 제외, 수동 관리 | API 키 등 기밀 정보 포함 |
+| 대용량 데이터 | `/mnt/ssd/robo-path-data/` | Git 외부, SSD 직접 관리 | PCD/CSV 파일, Git LFS 미사용 |
+
+---
+
+## 8. 라즈베리파이 환경 버전 관리 전략
+라즈베리파이는 클라우드 VM과 달리 물리 장치이므로 환경이 깨지면 복구 비용이 큽니다. 아래 전략으로 **재현 가능하고 롤백 가능한** 환경을 유지합니다.
+
+### 8.1 Python 패키지 버전 고정 (`requirements.txt`)
+설치한 패키지 버전을 항상 명시적으로 고정하여 어느 환경에서도 동일한 가상환경을 재현합니다.
+
+```bash
+# 현재 설치된 패키지 목록을 버전과 함께 고정 (작업 완료 후 반드시 실행)
+pip freeze > requirements.txt
+
+# 라즈베리파이 전용 패키지가 있는 경우 별도 파일로 분리
+pip freeze > requirements-pi.txt
+```
+
+> **규칙:** 패키지를 새로 설치하거나 업그레이드한 직후 `pip freeze`를 실행하고, 변경된 `requirements.txt`를 Git에 커밋합니다. 이를 통해 코드 변경과 환경 변경의 이력이 함께 추적됩니다.
+
+**`requirements.txt` 작성 예시:**
+```
+fastapi==0.115.12
+uvicorn==0.34.2
+streamlit==1.45.1
+python-multipart==0.0.20
+supabase==2.15.2
+websocket-client==1.8.0
+google-generativeai==0.8.5
+```
+
+### 8.2 시스템 패키지 스냅샷 (`apt`)
+Python 가상환경 밖에서 `apt`로 설치한 시스템 패키지(예: `nginx`, `samba`, `ffmpeg` 등)는 `pip freeze`로 추적되지 않습니다. 이를 스크립트로 별도 관리합니다.
+
+**`scripts/snapshot_env.sh` — 환경 스냅샷 저장 스크립트:**
+```bash
+#!/bin/bash
+# 실행 방법: bash scripts/snapshot_env.sh
+SNAPSHOT_DIR="/mnt/ssd/robo-path-data/backups/env_snapshot_$(date +%Y%m%d)"
+mkdir -p "$SNAPSHOT_DIR"
+
+# 1. apt 설치 패키지 목록 저장
+dpkg --get-selections > "$SNAPSHOT_DIR/apt_packages.txt"
+echo "[OK] apt 패키지 목록 저장: $SNAPSHOT_DIR/apt_packages.txt"
+
+# 2. Python 패키지 목록 저장 (pip freeze)
+source ~/ROBO-Path_project/venv/bin/activate
+pip freeze > "$SNAPSHOT_DIR/pip_packages.txt"
+echo "[OK] pip 패키지 목록 저장: $SNAPSHOT_DIR/pip_packages.txt"
+
+# 3. OS 및 커널 버전 기록
+uname -a > "$SNAPSHOT_DIR/os_info.txt"
+cat /etc/os-release >> "$SNAPSHOT_DIR/os_info.txt"
+echo "[OK] OS 정보 저장: $SNAPSHOT_DIR/os_info.txt"
+
+echo "=== 스냅샷 완료: $SNAPSHOT_DIR ==="
+```
+
+**스냅샷 복원 (재설치) 방법:**
+```bash
+# apt 패키지 일괄 재설치
+sudo dpkg --set-selections < env_snapshot_YYYYMMDD/apt_packages.txt
+sudo apt-get dselect-upgrade -y
+
+# pip 패키지 일괄 재설치
+pip install -r env_snapshot_YYYYMMDD/pip_packages.txt
+```
+
+### 8.3 설정 파일 버전 관리 (Git 추적 대상)
+라즈베리파이 고유 설정 파일은 `/etc/` 등 시스템 경로에 위치하지만, **원본을 프로젝트 저장소에 복사하여 Git으로 추적**합니다. 배포 스크립트 또는 CI/CD 파이프라인이 이 파일들을 실제 경로에 복사(심볼릭 링크)합니다.
+
+| 설정 파일 | 시스템 실제 경로 | Git 추적 경로 |
+|---|---|---|
+| Systemd API 서비스 | `/etc/systemd/system/robo-path-api.service` | `config/pi_services/robo-path-api.service` |
+| Systemd Web 서비스 | `/etc/systemd/system/robo-path-web.service` | `config/pi_services/robo-path-web.service` |
+| Nginx 설정 | `/etc/nginx/sites-available/robo-path` | `config/nginx/robo-path.conf` |
+
+**CI/CD 워크플로우에서 설정 파일 자동 반영:**
+```yaml
+# .github/workflows/deploy-to-pi.yml 중 일부
+- name: Sync config files
+  run: |
+    sudo cp config/pi_services/robo-path-api.service /etc/systemd/system/
+    sudo cp config/pi_services/robo-path-web.service /etc/systemd/system/
+    sudo cp config/nginx/robo-path.conf /etc/nginx/sites-available/robo-path
+    sudo systemctl daemon-reload
+    sudo nginx -t && sudo systemctl reload nginx
+```
+
+### 8.4 환경 변수 (`.env`) 관리
+`.env` 파일에는 Supabase URL·API 키, Gemini API 키 등 기밀 정보가 포함되므로 **절대 Git에 커밋하지 않습니다.**
+
+```bash
+# .gitignore에 반드시 포함
+venv/
+.env
+*.pcd
+*.csv
+```
+
+대신 아래 두 가지 방법 중 하나로 관리합니다.
+
+**방법 A: GitHub Actions Secrets 활용 (권장)**
+- GitHub Repository `Settings > Secrets and variables > Actions`에 각 키를 Secret으로 등록.
+- CI/CD 워크플로우에서 해당 Secret을 파이의 `.env` 파일로 생성하도록 스텝 추가.
+```yaml
+- name: Write .env file
+  run: |
+    echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" > ~/ROBO-Path_project/.env
+    echo "SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}" >> ~/ROBO-Path_project/.env
+    echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> ~/ROBO-Path_project/.env
+```
+
+**방법 B: `.env.example` 템플릿 커밋**
+- 실제 값이 없는 키 이름만 기록한 `.env.example`을 Git에 커밋하여 팀원이 어떤 변수가 필요한지 파악하도록 안내.
+```bash
+# .env.example (Git 추적 대상)
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+GEMINI_API_KEY=your_gemini_api_key
+STORAGE_BASE_PATH=/mnt/ssd/robo-path-data
+```
+
+### 8.5 환경 변경 시 워크플로우 요약
+라즈베리파이 환경을 변경할 때마다 아래 순서를 따릅니다.
+
+```
+1. 라즈베리파이에서 패키지 설치 또는 설정 파일 수정
+       │
+       ▼
+2. pip freeze > requirements.txt  (Python 패키지인 경우)
+   또는 config/ 디렉터리 파일 업데이트 (설정 파일인 경우)
+       │
+       ▼
+3. git add, git commit, git push (변경 이력 GitHub에 기록)
+       │
+       ▼
+4. bash scripts/snapshot_env.sh  (SSD에 전체 환경 스냅샷 저장)
+       │
+       ▼
+5. CI/CD 파이프라인 자동 실행 → 서비스 재시작 및 설정 반영
+```
