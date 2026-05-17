@@ -20,19 +20,23 @@ Runner를 설치하기 전에 파이에 기반 환경을 먼저 구성합니다.
 
 **① GitHub SSH 키 등록 (git pull 인증)**
 ```bash
-# SSH 키 생성
+# SSH 키 생성 (passphrase는 Enter로 비워둘 것 - 자동화 필수)
 ssh-keygen -t ed25519 -C "robo-path-pi" -f ~/.ssh/github_pi
 
-# 공개 키 출력 → GitHub > Settings > SSH and GPG keys > New SSH key 에 등록
+# 공개 키 출력 → GitHub > (프로필) Settings > SSH and GPG keys > New SSH key 에 등록
 cat ~/.ssh/github_pi.pub
 
-# SSH 설정 파일 작성
-cat >> ~/.ssh/config << 'EOF'
+# SSH 설정 파일 작성 (>> 대신 > 로 명시적 생성)
+cat > ~/.ssh/config << 'EOF'
 Host github.com
   HostName github.com
   User git
   IdentityFile ~/.ssh/github_pi
 EOF
+chmod 600 ~/.ssh/config
+
+# 연결 테스트 (Hi kimsunwook01! 메시지가 나오면 성공)
+ssh -T git@github.com
 ```
 
 **② 리포지토리 클론 및 가상환경 구성**
@@ -48,16 +52,25 @@ pip install -r requirements.txt
 deactivate
 ```
 
-**③ Runner용 sudo 권한 설정 (비밀번호 없이 서비스 제어)**
+**③ Nginx 설치 (CI/CD 설정 파일 복사를 위해 사전 필수)**
+
+Raspberry Pi OS에는 Nginx가 기본 설치되어 있지 않습니다. 워크플로우의 config 복사가 실패하지 않도록 반드시 먼저 설치합니다.
+```bash
+sudo apt update
+sudo apt install nginx -y
+nginx -v  # 설치 확인
+```
+
+**④ Runner용 sudo 권한 설정 (비밀번호 없이 서비스 제어)**
 
 CI/CD 워크플로우가 `systemctl`, `nginx`, `cp` 명령어를 자동으로 실행하려면 passwordless sudo가 필요합니다.
 ```bash
 # sudoers 파일에 허용 명령어 추가
 sudo visudo -f /etc/sudoers.d/robo-path-runner
 ```
-아래 내용을 입력 후 저장 (`pi` 부분을 실제 파이 계정명으로 변경):
+아래 내용을 입력 후 저장 (`rpi5` 부분을 실제 파이 계정명으로 변경):
 ```
-pi ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/nginx, /bin/cp, /usr/bin/ln
+rpi5 ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/nginx, /bin/cp, /usr/bin/ln
 ```
 
 ### 2.2 Self-Hosted Runner 설치
@@ -84,10 +97,93 @@ sudo ./svc.sh start
 5. `robo-path-api`, `robo-path-web` 서비스 재시작
 6. Nginx 설정 검증 및 리로드
 7. 배포 결과 상태 검증 (실패 시 워크플로우 오류로 표시)
+### 2.4 ⚠️ 실제 구축 시 발생한 문제 및 해결 방법 (Troubleshooting Record)
+
+> 2026-05-18 실제 라즈베리파이(계정: `rpi5`) 구축 과정에서 발생한 시행착오 기록입니다.  
+> 동일 환경 재구성 시 참고하여 동일한 실수를 반복하지 않도록 합니다.
 
 ---
 
-## 3. Phase 2: 스토리지 디렉토리 구성 및 환경 세팅
+#### 문제 1: SSH 키 등록 후에도 `Permission denied (publickey)` 오류
+
+**증상:**
+```
+git@github.com: Permission denied (publickey).
+```
+
+**원인:** `~/.ssh/config` 파일이 생성되지 않아 SSH가 `github_pi` 키를 시도하지 않고 기본 키(`id_rsa` 등)만 시도했습니다. 또한 `cat >> ~/.ssh/config` 명령어는 파일이 없을 때 새로 생성되지 않는 경우가 있었습니다.
+
+**해결책:** `>>` 대신 `>`(overwrite)를 사용하여 config 파일을 명시적으로 생성하고 권한을 설정합니다.
+```bash
+# >>  대신 > 를 사용하여 확실하게 생성
+cat > ~/.ssh/config << 'EOF'
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_pi
+EOF
+chmod 600 ~/.ssh/config
+
+# 키를 직접 지정하여 GitHub 인증 테스트 (config와 무관하게 확인)
+ssh -i ~/.ssh/github_pi -T git@github.com
+```
+
+---
+
+#### 문제 2: SSH key passphrase 입력 프롬프트
+
+**증상:**
+```
+Enter passphrase for "/home/rpi5/.ssh/github_pi" (empty for no passphrase):
+```
+
+**원인:** `ssh-keygen` 실행 시 암호(passphrase) 설정 여부를 묻는 정상적인 프롬프트입니다.
+
+**해결책:** **Enter를 두 번 눌러 암호를 비워둡니다.** CI/CD 자동화 환경에서는 암호가 설정되면 `git pull` 실행 시 대화형 입력이 필요하게 되어 자동화가 불가능합니다.
+
+---
+
+#### 문제 3: 워크플로우의 `/home/pi/` 하드코딩으로 인한 배포 실패
+
+**증상:** GitHub Actions 워크플로우 Step 1에서 경로를 찾지 못해 실패.
+
+**원인:** `deploy-to-pi.yml`에 경로가 `/home/pi/ROBO-Path_project`로 하드코딩되어 있었으나, 실제 파이 계정명이 `rpi5`였습니다 (`/home/rpi5/`).
+
+**해결책:** 워크플로우의 모든 절대 경로를 `$HOME` 환경 변수로 대체합니다. 계정명에 무관하게 동작합니다.
+```yaml
+# ❌ 하드코딩 (계정명 변경 시 깨짐)
+run: cd /home/pi/ROBO-Path_project
+
+# ✅ 환경 변수 사용 (계정명 무관)
+run: cd $HOME/ROBO-Path_project
+```
+
+---
+
+#### 문제 4: Nginx 미설치로 인한 config 복사 실패
+
+**증상:**
+```
+cp: cannot create regular file '/etc/nginx/sites-available/robo-path': No such file or directory
+```
+
+**원인:** Raspberry Pi OS에는 Nginx가 기본 설치되어 있지 않습니다. `/etc/nginx/` 디렉토리 자체가 존재하지 않았습니다.
+
+**해결책:** Runner 설치 전 또는 최초 구성 단계에서 Nginx를 먼저 설치해야 합니다.
+```bash
+sudo apt update
+sudo apt install nginx -y
+
+# 설치 확인
+nginx -v
+ls /etc/nginx/sites-available/
+```
+
+> **결론:** `2.1 최초 1회 환경 구성` 단계에 Nginx 설치를 반드시 포함시켜야 합니다.
+
+---
+
+
 SSD의 공간을 체계적으로 사용하고 프로젝트의 독립된 실행 환경을 구성합니다.
 
 ### 3.1 1TB SSD 디렉토리 및 권한 설정
