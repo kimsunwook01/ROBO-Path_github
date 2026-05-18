@@ -26,7 +26,7 @@ jobs:
           SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          STORAGE_BASE_PATH=/mnt/ssd/robo-path-data
+          STORAGE_BASE_PATH=/home/rpi5/robo-path-data
           ENVEOF
 
       # Step 3: Python 패키지 업데이트
@@ -44,26 +44,30 @@ jobs:
                   /etc/systemd/system/robo-path-web.service
           sudo cp $HOME/ROBO-Path_project/config/nginx/robo-path.conf \
                   /etc/nginx/sites-available/robo-path
+          # robo-path 사이트 활성화
           sudo ln -sf /etc/nginx/sites-available/robo-path \
                       /etc/nginx/sites-enabled/robo-path
+          # Nginx 기본(default) 사이트 비활성화 - 포트 80 충돌 방지
+          sudo rm -f /etc/nginx/sites-enabled/default
           sudo systemctl daemon-reload
           sudo systemctl enable robo-path-api robo-path-web
 
       # Step 5: 애플리케이션 서비스 재시작
-      # 앱 코드(api.py, app.py) 미구현 단계에서는 실패해도 파이프라인을 중단하지 않음
       - name: Restart application services
         run: |
-          sudo systemctl restart robo-path-api || echo "⚠️ robo-path-api 시작 실패 (앱 미구현 상태일 수 있음)"
-          sudo systemctl restart robo-path-web || echo "⚠️ robo-path-web 시작 실패 (앱 미구현 상태일 수 있음)"
+          sudo systemctl restart robo-path-api || echo "⚠️ robo-path-api 시작 실패 (스토리지 경로 또는 패키지 문제일 수 있음)"
+          sudo systemctl restart robo-path-web || echo "⚠️ robo-path-web 시작 실패 (앱 코드 미구현 상태)"
 
       # Step 6: Nginx 설정 검증 후 리로드
       - name: Reload Nginx
-        run: sudo nginx -t && sudo systemctl reload nginx
+        run: |
+          sudo nginx -t
+          sudo systemctl reload nginx
 
-      # Step 7: 배포 결과 리포트 (서비스 상태 출력 - 실패해도 워크플로우 중단 안 함)
+      # Step 7: 배포 결과 리포트
       - name: Report deployment status
         run: |
           echo "=== 배포 완료 상태 리포트 ==="
-          sudo systemctl is-active robo-path-api && echo "✅ FastAPI 서버: 실행 중" || echo "⏸️ FastAPI 서버: 미실행 (앱 코드 구현 후 활성화됨)"
-          sudo systemctl is-active robo-path-web && echo "✅ Streamlit 서버: 실행 중" || echo "⏸️ Streamlit 서버: 미실행 (앱 코드 구현 후 활성화됨)"
+          sudo systemctl is-active robo-path-api && echo "✅ FastAPI 서버: 실행 중" || echo "⏸️ FastAPI 서버: 미실행"
+          sudo systemctl is-active robo-path-web && echo "✅ Streamlit 서버: 실행 중" || echo "⏸️ Streamlit 서버: 미실행"
           sudo systemctl is-active nginx && echo "✅ Nginx: 실행 중" || echo "❌ Nginx: 오류"
