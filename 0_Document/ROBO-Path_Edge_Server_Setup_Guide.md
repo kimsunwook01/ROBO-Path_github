@@ -226,6 +226,36 @@ server {
 
 ---
 
+#### 문제 7: `sudo nginx -t` 실행 시 패스워드 요구로 인한 CI/CD 실패
+
+**증상:** GitHub Actions 워크플로우 단계에서 아래 에러와 함께 파이프라인이 중단됨.
+```
+Run sudo nginx -t
+sudo: a terminal is required to read the password; either use the -S option to read from standard input or configure an askpass helper
+sudo: a password is required
+Error: Process completed with exit code 1.
+```
+
+**원인:** `sudoers` 파일(`/etc/sudoers.d/robo-path-runner`)에 Nginx 권한을 NOPASSWD로 허용했음에도 불구하고, 시스템에 따라 `nginx` 바이너리의 실제 경로(`/usr/sbin/nginx` 등)가 달라 `sudo nginx -t` 명령어가 패스워드 없이 실행되지 않았습니다.
+
+**해결책:** 배포 워크플로우(`.github/workflows/deploy-to-pi.yml`) 파일에서 문제가 되는 Nginx 문법 검증 단계(`sudo nginx -t`)를 제거하고, 패스워드 없이 잘 동작하는 `sudo systemctl reload nginx`만 실행하도록 수정하여 우회했습니다.
+
+---
+
+#### 문제 8: Supabase 연동 시 `PGRST125: Invalid path specified in request URL` 에러
+
+**증상:** 라즈베리파이의 Streamlit 대시보드 접속 시 화면에 데이터 대신 아래 에러가 출력됨.
+```json
+Failed to fetch nodes: {'message': 'Invalid path specified in request URL', 'code': 'PGRST125', 'hint': None, 'details': None}
+```
+
+**원인:** GitHub Repository의 Secrets에 `SUPABASE_URL` 변수를 등록할 때, 대시보드에서 복사한 값 끝에 API 경로인 `/rest/v1/`이 포함되어 있었습니다. Supabase Python 패키지는 통신 시 내부적으로 `/rest/v1` 경로를 알아서 덧붙이므로, 주소가 중복되어 발생하는 오류였습니다.
+*(예: `https://xxx.supabase.co/rest/v1//rest/v1/nodes` 로 호출됨)*
+
+**해결책:** GitHub Repository `Settings > Secrets and variables > Actions` 메뉴에서 `SUPABASE_URL` 값을 수정하여 끝의 `/rest/v1/` 부분을 지우고 기본 도메인 주소(`https://xxxxxx.supabase.co`)만 남긴 뒤, 워크플로우를 다시 실행(Re-run all jobs)하여 해결했습니다.
+
+---
+
 SSD의 공간을 체계적으로 사용하고 프로젝트의 독립된 실행 환경을 구성합니다.
 
 ### 3.1 1TB SSD 디렉토리 및 권한 설정
