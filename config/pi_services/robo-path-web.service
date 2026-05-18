@@ -4,9 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/ROBO-Path_project
-ExecStart=/home/pi/ROBO-Path_project/venv/bin/streamlit run src/presentation/dashboard/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+User=rpi5
+WorkingDirectory=%h/ROBO-Path_project
+EnvironmentFile=%h/ROBO-Path_project/.env
+ExecStart=%h/ROBO-Path_project/venv/bin/streamlit run src/presentation/dashboard/app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal

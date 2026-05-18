@@ -4,9 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/ROBO-Path_project
-ExecStart=/home/pi/ROBO-Path_project/venv/bin/uvicorn src.infrastructure.storage.api:app --host 0.0.0.0 --port 8000
+User=rpi5
+WorkingDirectory=%h/ROBO-Path_project
+EnvironmentFile=%h/ROBO-Path_project/.env
+ExecStart=%h/ROBO-Path_project/venv/bin/uvicorn src.infrastructure.storage.api:app --host 0.0.0.0 --port 8000
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
