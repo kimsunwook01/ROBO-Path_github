@@ -58,10 +58,9 @@ jobs:
           sudo systemctl restart robo-path-api || echo "⚠️ robo-path-api 시작 실패 (스토리지 경로 또는 패키지 문제일 수 있음)"
           sudo systemctl restart robo-path-web || echo "⚠️ robo-path-web 시작 실패 (앱 코드 미구현 상태)"
 
-      # Step 6: Nginx 설정 검증 후 리로드
+      # Step 6: Nginx 리로드 (sudo nginx -t 는 패스워드 요구 문제로 생략)
       - name: Reload Nginx
         run: |
-          sudo nginx -t
           sudo systemctl reload nginx
 
       # Step 7: 배포 결과 리포트
