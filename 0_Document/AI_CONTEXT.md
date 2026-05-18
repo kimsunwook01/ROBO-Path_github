@@ -28,6 +28,7 @@
 - 전체 기획 및 분산 처리 명세: `0_Document/ROBO-Path_Design_Report.md`
 - 데이터베이스 ERD 및 DDL 스키마: `0_Document/ROBO-Path_Supabase_DB_Architecture.md`
 - 폴더 구조 및 계층별 분리 전략: `0_Document/ROBO-Path_Software_Architecture.md`
+- 대시보드 연동 기획(Streamlit): `0_Document/ROBO-Path_Streamlit_Dashboard_Plan.md`
 
 ---
 
@@ -55,8 +56,9 @@
 - [ ] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
   - [ ] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
 - [ ] **7. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
-  - [ ] Streamlit 기반의 노드/엣지 지도 시각화 대시보드 뼈대 작성
-  - [ ] A* 경로 탐색 시뮬레이터 폼 및 결과 시각화
+  - [ ] [Phase 1] Supabase-Streamlit 데이터 연동 검증 및 테이블 출력 (`app.py`)
+  - [ ] [Phase 2] Streamlit 기반의 노드/엣지 지도 시각화 대시보드 뼈대 작성
+  - [ ] [Phase 3] A* 경로 탐색 시뮬레이터 폼 및 결과 시각화
 - [ ] **8. 에지 서버(라즈베리파이) 인프라 및 통신 구현 (`src/infrastructure/storage/`, `src/presentation/ros2_bridge/`)**
   - [x] [Phase 1] GitHub Actions Self-Hosted Runner 기반 CI/CD 자동 배포 파이프라인 구축 (**완료** - Runner가 Systemd 서비스로 등록, 부팅 시 자동 실행)
   - [x] [Phase 2] 라즈베리파이 1TB SSD 마운트 권한 및 파이썬 가상환경(venv) 세팅 (**완료** - `/home/rpi5/ROBO-Path_project/venv/` 구성)
