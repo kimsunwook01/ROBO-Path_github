@@ -60,8 +60,8 @@
 - [ ] **8. 에지 서버(라즈베리파이) 인프라 및 통신 구현 (`src/infrastructure/storage/`, `src/presentation/ros2_bridge/`)**
   - [x] [Phase 1] GitHub Actions Self-Hosted Runner 기반 CI/CD 자동 배포 파이프라인 구축 (**완료** - Runner가 Systemd 서비스로 등록, 부팅 시 자동 실행)
   - [x] [Phase 2] 라즈베리파이 1TB SSD 마운트 권한 및 파이썬 가상환경(venv) 세팅 (**완료** - `/home/rpi5/ROBO-Path_project/venv/` 구성)
-  - [ ] [Phase 3] 로컬 SSD 스토리지 파일(PCD, 원천 로그) 관리용 FastAPI 엔드포인트 구현 (**다음 작업**)
-  - [ ] [Phase 4] Systemd 무중단 서비스 데몬 등록 및 Nginx 리버스 프록시 라우팅 설정
-  - [ ] [Phase 5] 웹소켓 기반 ROS2 제어 브릿지 스크립트 작성 및 통신망 구축
+  - [x] [Phase 3] 로컬 SSD 스토리지 파일(PCD, 원천 로그) 관리용 FastAPI 엔드포인트 구현 (**완료** - `src/infrastructure/storage/api.py` 구현, `/upload/pcd`, `/upload/log`, `/files/{path}`, `/health` 엔드포인트)
+  - [x] [Phase 4] Systemd 무중단 서비스 데몬 등록 및 Nginx 리버스 프록시 라우팅 설정 (**완료** - `robo-path-api.service` 활성화, Nginx 포트 80 라우팅 적용)
+  - [ ] [Phase 5] 웹소켓 기반 ROS2 제어 브릿지 스크립트 작성 및 통신망 구축 (**다음 작업**)
 
 > **Update Rule:** 이 파일은 프로젝트의 주요 마일스톤이 달성되거나 아키텍처 정책이 변경될 때마다 AI에 의해 갱신되어야 합니다.

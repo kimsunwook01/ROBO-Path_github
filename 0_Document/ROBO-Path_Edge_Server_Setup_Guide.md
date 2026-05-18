@@ -183,6 +183,48 @@ ls /etc/nginx/sites-available/
 
 ---
 
+#### 문제 5: `sudo: a password is required` — CI/CD에서 sudo 명령 실패
+
+**증상:**
+```
+sudo: a terminal is required to read the password
+sudo: a password is required
+Error: Process completed with exit code 1.
+```
+
+**원인:** sudoers 설정(`/etc/sudoers.d/robo-path-runner`)이 파이에 적용되지 않아 워크플로우의 `sudo cp`, `sudo systemctl` 명령이 패스워드를 요구했습니다. CI/CD 환경에서는 대화형 입력이 불가능하므로 즉시 실패합니다.
+
+**해결책:** 파이에 SSH 접속 후 sudoers 파일에 허용할 명령어를 등록합니다. `rm`도 반드시 포함해야 합니다.
+```bash
+sudo visudo -f /etc/sudoers.d/robo-path-runner
+```
+```
+rpi5 ALL=(ALL) NOPASSWD: /bin/systemctl, /usr/bin/nginx, /bin/cp, /usr/bin/ln, /usr/bin/rm, /bin/rm
+```
+설정 후 검증: `sudo -n systemctl status nginx` (패스워드 없이 실행되면 정상)
+
+---
+
+#### 문제 6: Nginx `conflicting server name "_"` — 기본 사이트와 포트 80 충돌
+
+**증상:** `nginx -t`에서 경고 후 reload 실패, 또는 두 서버가 동일 포트를 listen하는 현상.
+
+**원인:** Nginx 설치 시 자동 활성화되는 `/etc/nginx/sites-enabled/default`가 `listen 80 default_server`를 선언하고 있고, 우리의 `robo-path.conf`도 동일한 포트를 사용하여 충돌했습니다.
+
+**해결책 (두 가지 적용):**
+1. 워크플로우에서 default 사이트를 명시적으로 비활성화:
+```bash
+sudo rm -f /etc/nginx/sites-enabled/default
+```
+2. `robo-path.conf`에 `listen 80 default_server` 명시하여 우선순위 확정:
+```nginx
+server {
+    listen 80 default_server;  # default 키워드 추가
+    ...
+}
+```
+
+---
 
 SSD의 공간을 체계적으로 사용하고 프로젝트의 독립된 실행 환경을 구성합니다.
 
