@@ -27,3 +27,14 @@
    ```
 2. 웹 브라우저(`http://localhost:8501`)로 자동 연결되는지 확인합니다.
 3. 브라우저 화면상에 Supabase DB에 적재된 `nodes` 및 `edges` 테이블의 데이터가 DataFrame(표) 형태로 정상 출력되는지 육안으로 확인합니다.
+
+---
+
+## 4. 검증 결과 및 완료 상태 (Status: Completed)
+
+- **2026-05-18:** 초기 로컬 테스트 계획을 수정하여, 실제 운영 환경인 라즈베리파이(Edge Server)의 CI/CD 파이프라인(GitHub Actions)을 통해 즉시 배포하고 검증하는 방식으로 전환했습니다.
+- **결과:**
+  - Nginx 리버스 프록시(80 포트 -> 8501 포트) 라우팅 검증 완료.
+  - GitHub Secrets를 이용한 `.env` 자동 주입(Supabase URL, Key) 파이프라인 검증 완료.
+  - Supabase SQL Editor를 통해 더미 데이터를 삽입한 후(RLS 정책 하에), Streamlit 대시보드에서 `nodes` 및 `map_edges` 테이블 데이터를 성공적으로 불러오고 시각화(표)하는 것을 확인했습니다.
+- **결론:** 프레젠테이션 계층(Streamlit) - 인프라 계층(라즈베리파이 서버) - 데이터 계층(Supabase) 간의 End-to-End 통신 파이프라인이 완벽히 구축되었습니다.

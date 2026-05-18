@@ -55,8 +55,8 @@
   - [ ] 주행 로그가 삽입되면 엣지 통계를 갱신하는 `FeedbackAggregationService` 작성
 - [ ] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
   - [ ] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
-- [ ] **7. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
-  - [ ] [Phase 1] Supabase-Streamlit 데이터 연동 검증 및 테이블 출력 (`app.py`)
+- [x] **7. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
+  - [x] [Phase 1] Supabase-Streamlit 데이터 연동 검증 및 테이블 출력 (`app.py`) - **완료** (라즈베리파이 CI/CD 환경에서 구동 및 RLS 통신 검증)
   - [ ] [Phase 2] Streamlit 기반의 노드/엣지 지도 시각화 대시보드 뼈대 작성
   - [ ] [Phase 3] A* 경로 탐색 시뮬레이터 폼 및 결과 시각화
 - [ ] **8. 에지 서버(라즈베리파이) 인프라 및 통신 구현 (`src/infrastructure/storage/`, `src/presentation/ros2_bridge/`)**
