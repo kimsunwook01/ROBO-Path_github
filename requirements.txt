@@ -1,7 +1,8 @@
 packaging==26.0
 supabase
 python-dotenv
-
+pandas
+streamlit
 # FastAPI 스토리지 서버 (Phase 3)
 fastapi
 uvicorn[standard]
