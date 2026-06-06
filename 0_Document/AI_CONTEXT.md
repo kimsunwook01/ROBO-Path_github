@@ -29,6 +29,7 @@
 - 데이터베이스 ERD 및 DDL 스키마: `0_Document/ROBO-Path_Supabase_DB_Architecture.md`
 - 폴더 구조 및 계층별 분리 전략: `0_Document/ROBO-Path_Software_Architecture.md`
 - 대시보드 연동 기획(Streamlit): `0_Document/ROBO-Path_Streamlit_Dashboard_Plan.md`
+- 애플리케이션 서비스 계층 설계: `0_Document/ROBO-Path_Application_Service_Layer.md`
 
 ---
 
@@ -51,9 +52,9 @@
 - [x] **DB 휴면 방지:** Supabase 무료 요금제 휴면 방지를 위한 더미 테이블(`sleep_prevention_table`) 추가 및 GitHub Actions 기반 3일 주기 자동 Ping 파이프라인 구축 완료
 
 **🚀 [현재 대기 중인 작업 (Next Action)]**
-- [ ] **5. 애플리케이션 서비스 계층 구현 (`src/application/services/`)**
-  - [ ] 도메인 알고리즘(A*)과 인프라(Repository)를 연결하여 경로를 탐색하는 `PathPlanningService` 작성
-  - [ ] 주행 로그가 삽입되면 엣지 통계를 갱신하는 `FeedbackAggregationService` 작성
+- [x] **5. 애플리케이션 서비스 계층 구현 (`src/application/services/`)**
+  - [x] 도메인 알고리즘(A*)과 인프라(Repository)를 연결하여 경로를 탐색하는 `PathPlanningService` 작성
+  - [x] 주행 로그가 삽입되면 엣지 통계를 갱신하는 `FeedbackAggregationService` 작성
 - [ ] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
   - [ ] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
 - [x] **7. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
