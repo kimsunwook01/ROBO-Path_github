@@ -1,0 +1,30 @@
+name: Supabase Keep Alive Ping
+
+on:
+  schedule:
+    # 3일마다 자정(UTC 기준)에 실행 (cron 형식)
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # 수동으로 실행할 수 있는 옵션
+
+jobs:
+  ping-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "Pinging Supabase database to prevent pause..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}" \
+            "${SUPABASE_URL}/rest/v1/sleep_prevention_table?select=*&limit=1")
+          
+          echo "Response HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Ping failed with status $HTTP_STATUS"
+            exit 1
+          else
+            echo "Ping successful!"
+          fi

@@ -48,6 +48,7 @@
   - Supabase 연결 싱글톤 클라이언트, Repository 통신 규약(Protocol), Supabase용 Repository 구현체 작성 완료
 - [x] **4. 순수 도메인 알고리즘 설계 및 구현 (`src/domain/algorithms/`)**
   - 플랫폼 가중치 기반 Edge Cost 산출, A* 경로 탐색, 하드웨어 피드백 통계 누적(Aggregation) 로직 구현 완료
+- [x] **DB 휴면 방지:** Supabase 무료 요금제 휴면 방지를 위한 더미 테이블(`sleep_prevention_table`) 추가 및 GitHub Actions 기반 3일 주기 자동 Ping 파이프라인 구축 완료
 
 **🚀 [현재 대기 중인 작업 (Next Action)]**
 - [ ] **5. 애플리케이션 서비스 계층 구현 (`src/application/services/`)**
