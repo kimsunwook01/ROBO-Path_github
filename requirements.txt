@@ -7,3 +7,7 @@ streamlit
 fastapi
 uvicorn[standard]
 python-multipart
+
+# LLM 파이프라인
+google-genai
+pydantic

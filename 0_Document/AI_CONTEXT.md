@@ -30,6 +30,7 @@
 - 폴더 구조 및 계층별 분리 전략: `0_Document/ROBO-Path_Software_Architecture.md`
 - 대시보드 연동 기획(Streamlit): `0_Document/ROBO-Path_Streamlit_Dashboard_Plan.md`
 - 애플리케이션 서비스 계층 설계: `0_Document/ROBO-Path_Application_Service_Layer.md`
+- LLM 기반 피드백 지식화 파이프라인 설계: `0_Document/ROBO-Path_LLM_Pipeline_Design.md`
 
 ---
 
@@ -55,8 +56,8 @@
 - [x] **5. 애플리케이션 서비스 계층 구현 (`src/application/services/`)**
   - [x] 도메인 알고리즘(A*)과 인프라(Repository)를 연결하여 경로를 탐색하는 `PathPlanningService` 작성
   - [x] 주행 로그가 삽입되면 엣지 통계를 갱신하는 `FeedbackAggregationService` 작성
-- [ ] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
-  - [ ] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
+- [x] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
+  - [x] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
 - [x] **7. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
   - [x] [Phase 1] Supabase-Streamlit 데이터 연동 검증 및 테이블 출력 (`app.py`) - **완료** (라즈베리파이 CI/CD 환경에서 구동 및 RLS 통신 검증)
   - [ ] [Phase 2] Streamlit 기반의 노드/엣지 지도 시각화 대시보드 뼈대 작성
