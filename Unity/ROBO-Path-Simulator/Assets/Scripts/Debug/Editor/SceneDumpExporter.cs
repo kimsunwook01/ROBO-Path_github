@@ -97,10 +97,9 @@ namespace ROBOPath.Debug.Editor
             // Serialization
             string json = JsonUtility.ToJson(dump, true);
 
-            // Path: Unity/ROBO-Path-Simulator/ is Application.dataPath/.. 
-            // So Application.dataPath is Unity/ROBO-Path-Simulator/Assets
-            // We want ProjectRoot/scene_snapshots/scene_dump.json -> Unity/ROBO-Path-Simulator/../../scene_snapshots/scene_dump.json
-            string targetDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../../../scene_snapshots"));
+            // Path: We want ProjectRoot/scene_snapshots/scene_dump.json -> Unity/ROBO-Path-Simulator/scene_snapshots/scene_dump.json
+            // Application.dataPath is Unity/ROBO-Path-Simulator/Assets, so we use ../scene_snapshots
+            string targetDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../scene_snapshots"));
             if (!Directory.Exists(targetDir))
             {
                 Directory.CreateDirectory(targetDir);
