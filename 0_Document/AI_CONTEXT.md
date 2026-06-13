@@ -37,6 +37,7 @@
 - 대시보드 연동 기획(Streamlit): `0_Document/ROBO-Path_Streamlit_Dashboard_Plan.md`
 - 애플리케이션 서비스 계층 설계: `0_Document/ROBO-Path_Application_Service_Layer.md`
 - LLM 기반 피드백 지식화 파이프라인 설계: `0_Document/ROBO-Path_LLM_Pipeline_Design.md`
+- 맵 설계 및 비용 프로파일 명세: `0_Document/ROBO-Path_Map_Design_Specification.md`
 
 ---
 
@@ -65,8 +66,9 @@
 - [x] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
   - [x] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
 - [ ] **7. Unity 시뮬레이터 연동 및 구축 (`Unity/`)**
-  - [ ] [Phase 1] Unity 프로젝트 생성 및 GitHub 연동 (.gitignore 설정)
+  - [x] [Phase 1] Unity 프로젝트 생성 및 GitHub 연동 (.gitignore 설정)
   - [ ] [Phase 2] 500m x 500m 가상 캠퍼스 맵 제작 (Terrain + ProBuilder) 및 NavMesh 베이크
+    - [x] 맵 설계 명세 추가 및 공유 파라미터 파일 작성
   - [ ] [Phase 3] 로봇 2종(Wheeled/Legged) 구현 (NavMesh + Raycast + 피드백 계산 로직)
   - [ ] [Phase 4] Unity 내장 WebSocket 서버(`WebSocketServer.cs`) 및 C# Python 브릿지(Supabase 적재) 로직 작성
   - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축

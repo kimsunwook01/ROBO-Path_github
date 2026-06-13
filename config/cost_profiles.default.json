@@ -1,0 +1,40 @@
+{
+  "noise_range": 0.05,
+  "curb_height": 0.15,
+  "platforms": {
+    "wheeled": {
+      "weights": {
+        "W_L": 0.3,
+        "W_S": 0.5,
+        "W_E": 0.2
+      },
+      "terrains": {
+        "Terrain_Flat": { "L": 0.10, "S": 0.95, "E": 0.95, "traversable": true },
+        "Terrain_Slope": { "L": 0.50, "S": 0.60, "E": 0.50, "traversable": true },
+        "Path_Ramp": { "L": 0.35, "S": 0.75, "E": 0.65, "traversable": true },
+        "Path_Stair": { "L": null, "S": null, "E": null, "traversable": false },
+        "Road_Sidewalk": { "L": 0.15, "S": 0.90, "E": 0.90, "traversable": true },
+        "Road_Vehicle": { "L": 0.30, "S": 0.40, "E": 0.85, "traversable": true },
+        "Road_Crosswalk": { "L": 0.15, "S": 0.88, "E": 0.88, "traversable": true },
+        "Path_Tunnel": { "L": 0.20, "S": 0.85, "E": 0.85, "traversable": true }
+      }
+    },
+    "legged": {
+      "weights": {
+        "W_L": 0.2,
+        "W_S": 0.3,
+        "W_E": 0.5
+      },
+      "terrains": {
+        "Terrain_Flat": { "L": 0.20, "S": 0.90, "E": 0.70, "traversable": true },
+        "Terrain_Slope": { "L": 0.40, "S": 0.75, "E": 0.60, "traversable": true },
+        "Path_Ramp": { "L": 0.35, "S": 0.80, "E": 0.60, "traversable": true },
+        "Path_Stair": { "L": 0.45, "S": 0.70, "E": 0.65, "traversable": true },
+        "Road_Sidewalk": { "L": 0.20, "S": 0.90, "E": 0.70, "traversable": true },
+        "Road_Vehicle": { "L": 0.35, "S": 0.50, "E": 0.75, "traversable": true },
+        "Road_Crosswalk": { "L": 0.20, "S": 0.88, "E": 0.70, "traversable": true },
+        "Path_Tunnel": { "L": 0.25, "S": 0.85, "E": 0.65, "traversable": true }
+      }
+    }
+  }
+}
