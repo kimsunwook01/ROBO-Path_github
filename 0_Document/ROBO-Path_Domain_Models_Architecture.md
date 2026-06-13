@@ -57,7 +57,7 @@ classDiagram
         +float confidence_score [0.0 ~ 1.0]
         +int visit_count
         +bool is_verified
-        +str pcd_file_url
+        +str pcd_file_url [의미: 탐색 복셀 데이터 경로]
     }
     Node <|-- BaseLocation : 상속 (Inheritance)
     Node <|-- DiscoveredNode : 상속 (Inheritance)
@@ -111,7 +111,7 @@ classDiagram
 ### 3.2 노드 다형성 계층 (`node.py`)
 - **Node (Base)**: 모든 경유점이 공통적으로 가지는 3차원 지역 좌표($X, Y, Z$)를 정의합니다.
 - **BaseLocation**: 충전소, 엘리베이터 등 **인간이 사전 정의한** 목적지 노드입니다. 고신뢰 데이터를 의미하며, `name`과 `priority`를 가집니다.
-- **DiscoveredNode**: 로봇이 자율 탐험(Exploration) 중 **스스로 발견한** 경유점입니다. AI 분석 결과에 따른 `confidence_score`를 가지며, 0.0에서 1.0 사이의 값으로 Pydantic 제약(`ge=0.0, le=1.0`)이 적용되어 있습니다.
+- **DiscoveredNode**: 로봇이 자율 탐험(Exploration) 중 **스스로 발견한** 경유점입니다. AI 분석 결과에 따른 `confidence_score`를 가지며, 0.0에서 1.0 사이의 값으로 Pydantic 제약(`ge=0.0, le=1.0`)이 적용되어 있습니다. `pcd_file_url` 속성은 이름과 달리 현재 3D 포인트 클라우드가 아닌 탐색 복셀 데이터(Octree 직렬화 파일) 경로를 의미합니다.
 
 ### 3.3 연결성 및 가중치 통계 (`edge.py`)
 - **Edge**: `from_node_id`와 `to_node_id`를 연결하는 경로입니다. 순수 물리적 거리인 `distance_m`은 무조건 0보다 커야 합니다(`gt=0.0`).

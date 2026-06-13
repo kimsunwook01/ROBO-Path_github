@@ -67,7 +67,7 @@ CREATE TABLE discovered_nodes (
     confidence_score FLOAT DEFAULT 0.0 CHECK (confidence_score >= 0.0 AND confidence_score <= 1.0),
     visit_count INTEGER DEFAULT 1,
     is_verified BOOLEAN DEFAULT FALSE,
-    pcd_file_url TEXT
+    pcd_file_url TEXT -- [의미 재정의] 3D 포인트 클라우드가 아닌 탐색 복셀 데이터 파일(Octree 직렬화) 경로 (스키마 호환성 유지)
 );
 
 -- 5. 로봇 정보 테이블
