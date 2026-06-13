@@ -84,3 +84,80 @@ Streamlit 관제 UI에서 조작한 명령은 라즈베리파이를 거쳐 Unity
 GitHub Actions CI/CD 파이프라인(`.github/workflows/deploy-to-mac.yml`)을 통해 상시 가동되는 Mac Mini 환경에 맞게 구동 모드를 나눕니다.
 - **GUI 모드:** 사용자 시연 시 Unity Editor 및 빌드 뷰어를 통해 시각적 피드백 제공
 - **헤드리스 (Headless) 모드:** 평상시 백그라운드 구동 및 자원 절약을 위해 `-batchmode -nographics` 플래그로 렌더링 파이프라인을 비활성화한 채 내부 논리 연산만 수행
+
+---
+
+## 6. ROBO-Path Unity 시뮬레이터 검증 구조
+
+### 6.1 핵심 원칙
+코드 작성 후 "완성"이라고 판단하지 않습니다. 반드시 아래 검증 루프를 직접 실행하고 결과를 확인한 후에만 다음 단계로 넘어갑니다.
+
+### 6.2 환경 정보
+- **Unity 에디터 실행 경로 (Windows):** `"C:/Program Files/Unity/Hub/Editor/6000.4.11f1/Editor/Unity.exe"`
+- **Unity 프로젝트 경로:** `[현재 작업 중인 ROBO-Path 저장소]/Unity/`
+- **테스트 결과 출력 경로:** `[현재 작업 중인 ROBO-Path 저장소]/Unity/Logs/TestResults_Edit.xml` 및 `TestResults_Play.xml`
+- **로그 출력 경로:** `[현재 작업 중인 ROBO-Path 저장소]/Unity/Logs/simulator.log`
+
+### 6.3 AI 직접 실행 검증 루프
+코드 작성 후 반드시 아래 순서를 따릅니다.
+
+#### 1단계: EditMode 테스트 실행
+터미널에서 아래 명령을 실행하고 `TestResults_Edit.xml`을 읽어 failed 항목이 0건인지 확인합니다.
+```bat
+"C:/Program Files/Unity/Hub/Editor/6000.4.11f1/Editor/Unity.exe" ^
+  -batchmode ^
+  -nographics ^
+  -projectPath "[프로젝트 경로]/Unity" ^
+  -runTests ^
+  -testPlatform EditMode ^
+  -testResults "[프로젝트 경로]/Unity/Logs/TestResults_Edit.xml" ^
+  -quit
+```
+
+#### 2단계: PlayMode 테스트 실행
+터미널에서 아래 명령을 실행하고 `TestResults_Play.xml`을 읽어 failed 항목이 0건인지 확인합니다.
+```bat
+"C:/Program Files/Unity/Hub/Editor/6000.4.11f1/Editor/Unity.exe" ^
+  -batchmode ^
+  -nographics ^
+  -projectPath "[프로젝트 경로]/Unity" ^
+  -runTests ^
+  -testPlatform PlayMode ^
+  -testResults "[프로젝트 경로]/Unity/Logs/TestResults_Play.xml" ^
+  -quit
+```
+
+#### 3단계: 시뮬레이터 헤드리스 실행
+터미널에서 아래 명령을 실행하여 30초간 시뮬레이션을 실행하고, `simulator.log`를 확인하여 오류 여부와 로그 정상 출력(이동, Raycast, Supabase 전송)을 검증합니다.
+```bat
+"C:/Program Files/Unity/Hub/Editor/6000.4.11f1/Editor/Unity.exe" ^
+  -batchmode ^
+  -nographics ^
+  -projectPath "[프로젝트 경로]/Unity" ^
+  -executeMethod SimulatorValidator.RunValidation ^
+  -logFile "[프로젝트 경로]/Unity/Logs/simulator.log" ^
+  -quit
+```
+
+#### 4단계: Supabase 데이터 검증
+터미널에서 `python scripts/validate_simulation.py`를 실행하여 Supabase의 `simulation_logs` 테이블 레코드를 조회하고 피드백 이상값 및 적재 여부를 확인합니다.
+
+### 6.4 테스트 코드 구조
+- **EditMode 테스트 (`Unity/Assets/Tests/EditMode/`)**
+  1. `CostCalculatorTests.cs` (부하율, 비용 계산식, 범위 검증)
+  2. `NodeValidationTests.cs` (노드 좌표 및 엣지 거리 무결성 검증)
+  3. `RaycastConfigTests.cs` (Ray 개수, 범위, 각도 검증)
+- **PlayMode 테스트 (`Unity/Assets/Tests/PlayMode/`)**
+  1. `RobotMovementTests.cs` (플랫폼별 목적지 이동 및 계단 통과 제약 등 검증)
+  2. `RaycastScannerTests.cs` (오브젝트 감지 및 `DISCOVERED` 전환 검증)
+  3. `DataPipelineTests.cs` (브릿지 호출 및 데이터 전송 검증)
+- **SimulatorValidator (`Unity/Assets/Scripts/Debug/SimulatorValidator.cs`)**
+  - 헤드리스 실행용 엔트리포인트 (`-executeMethod`로 호출)
+
+### 6.5 단계별 검증 의무 (Validation Checklist)
+- **Step 1 (초기 설정):** EditMode 테스트 전체 통과 확인
+- **Step 2 (맵 제작):** EditMode `NodeValidationTests` 통과 및 헤드리스 맵 로드 성공 확인
+- **Step 3 (로봇 구현):** PlayMode `RobotMovementTests`, `RaycastScannerTests` 통과 및 헤드리스 탐색/이동 로그 확인
+- **Step 4 (파이프라인):** PlayMode `DataPipelineTests` 통과 및 `validate_simulation.py` 통과 확인
+- **Step 5 (배포 설정):** 맥미니 헤드리스 `simulator.log` 확인 및 `validate_simulation.py` 통과 확인
+- **Step 6 (UI 업데이트):** 대시보드 `DISCOVERED` 노드 및 A* 경로 시각화 확인
