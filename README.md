@@ -1,6 +1,6 @@
 # ROBO-Path (하드웨어 피드백 기반 입체 주행 경험 데이터베이스)
 
-NVIDIA Isaac Sim 시뮬레이션 환경과 라즈베리파이 에지 서버, 그리고 Supabase 클라우드를 연동하여 로봇의 플랫폼별 물리 피드백(부하율, 안정성, 효율성)을 반영하는 경험 기반 자율주행 경로 최적화 시스템입니다.
+Unity 6.4 3D 시뮬레이션 환경(Mac Mini M2 Pro)과 라즈베리파이 에지 서버, 그리고 Supabase 클라우드를 연동하여 로봇의 플랫폼별 물리 피드백(부하율, 안정성, 효율성)을 반영하는 경험 기반 자율주행 경로 최적화 시스템입니다.
 
 자세한 시스템 아키텍처 및 수학적 지표 연산식은 [기술 설계 보고서](0_Document/ROBO-Path_Design_Report.md) 에서 확인할 수 있습니다.
 
@@ -8,7 +8,7 @@ NVIDIA Isaac Sim 시뮬레이션 환경과 라즈베리파이 에지 서버, 그
 
 ## 1. 시스템 구성도 (Architecture Overview)
 본 프로젝트는 전기세 절감 및 연산 효율화를 위해 **3-Tier 하이브리드 분산 구조**로 작동합니다.
-- **Workstation**: NVIDIA Isaac Sim 구동 및 대용량 데이터(Point Cloud) 정제
+- **Mac Mini (M2 Pro)**: Unity 6.4 기반 가상 캠퍼스 시뮬레이션 구동 및 탐색(Raycast) 엔진 연산
 - **Raspberry Pi 5**: 1TB SSD 기반 대용량 파일 스토리지(FastAPI) 및 Streamlit 관제 웹 서버 호스팅
 - **Supabase**: PostgreSQL 기반 클라우드 메타데이터 저장 및 실시간 상태 동기화
 
@@ -20,7 +20,7 @@ NVIDIA Isaac Sim 시뮬레이션 환경과 라즈베리파이 에지 서버, 그
 
 ### 2.1 사전 요구 사항
 * **Python:** 3.10 이상 권장
-* **Workstation:** Ubuntu 환경, NVIDIA Isaac Sim, ROS2 (`rosbridge_suite`)
+* **Mac Mini:** macOS 환경, Unity 6.4 (6000.4.11f1)
 * **Edge Server:** Raspberry Pi 5 (Nginx, Systemd, GitHub Actions Runner 기반 무중단 환경 구성 완료)
 * **Cloud:** Supabase 계정 및 프로젝트 연동 완료 (RLS 정책 적용 완료)
 
@@ -47,7 +47,8 @@ pip install -r requirements.txt
 
 ```text
 ROBO-Path_project/
-├── .github/workflows/           # CI/CD 자동 배포 및 마이그레이션 파이프라인
+├── Unity/                       # Unity 6.4 가상 캠퍼스 및 시뮬레이션 환경
+├── .github/workflows/           # CI/CD 자동 배포(macOS, RPi) 및 마이그레이션 파이프라인
 ├── 0_Document/                  # 기획 및 아키텍처 설계 문서 등
 ├── config/                      # 라즈베리파이 시스템 설정 (Nginx, Systemd)
 ├── scripts/                     # 환경 스냅샷 및 DB 유지보수 등 셸 스크립트
@@ -55,7 +56,7 @@ ROBO-Path_project/
 │   ├── domain/                  # 핵심 알고리즘(A*) 및 Pydantic 데이터 모델
 │   ├── application/             # Use Case 및 Repository 인터페이스(Protocol)
 │   ├── infrastructure/          # 외부 기술 구현체 (Supabase DB, FastAPI Storage)
-│   └── presentation/            # UI 및 외부 진입점 (Streamlit Dashboard, ROS2 Bridge)
+│   └── presentation/            # UI 및 외부 진입점 (Streamlit Dashboard, C#-Python Bridge)
 ├── tests/                       # 단위/통합 테스트 스크립트
 ├── environment.yml              # Conda 환경 의존성
 ├── requirements.txt             # Pip 의존성 목록
