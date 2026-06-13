@@ -3,7 +3,23 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Node_Station
+  - Node_Pickup
+  - Node_Destination
+  - Waypoint
+  - Terrain_Flat
+  - Terrain_Slope
+  - Path_Stair
+  - Path_Ramp
+  - Path_Tunnel
+  - Road_Sidewalk
+  - Road_Vehicle
+  - Road_Crosswalk
+  - Building
+  - Obstacle
+  - Prop_Pole
+  - Prop_Tree
   layers:
   - Default
   - TransparentFX
