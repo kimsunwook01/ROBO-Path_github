@@ -175,11 +175,38 @@ namespace ROBOPath.Debug.Editor
             Bounds boundsA = GetBounds(a);
             Bounds boundsB = GetBounds(b);
 
-            // Expand bounds by tolerance / 2
-            boundsA.Expand(tolerance);
-            boundsB.Expand(tolerance);
+            // X axis
+            float aMinX = boundsA.min.x;
+            float aMaxX = boundsA.max.x;
+            float bMinX = boundsB.min.x;
+            float bMaxX = boundsB.max.x;
 
-            return boundsA.Intersects(boundsB);
+            // Z axis
+            float aMinZ = boundsA.min.z;
+            float aMaxZ = boundsA.max.z;
+            float bMinZ = boundsB.min.z;
+            float bMaxZ = boundsB.max.z;
+
+            // Calculate distance between bounds on each axis
+            float distX = Math.Max(0, Math.Max(aMinX - bMaxX, bMinX - aMaxX));
+            float distZ = Math.Max(0, Math.Max(aMinZ - bMaxZ, bMinZ - aMaxZ));
+
+            // Calculate overlap length on each axis
+            float overlapX = Math.Min(aMaxX, bMaxX) - Math.Max(aMinX, bMinX);
+            float overlapZ = Math.Min(aMaxZ, bMaxZ) - Math.Max(aMinZ, bMinZ);
+
+            bool isTouchingX = distX <= tolerance;
+            bool isTouchingZ = distZ <= tolerance;
+
+            // Must overlap by more than tolerance to exclude mere vertex (corner) touching
+            bool overlapsX = overlapX > tolerance;
+            bool overlapsZ = overlapZ > tolerance;
+
+            // 4-way adjacency: must touch on one axis and overlap on the other
+            if (isTouchingX && overlapsZ) return true;
+            if (isTouchingZ && overlapsX) return true;
+
+            return false;
         }
 
         private static Bounds CalculateMapBounds(List<GameObject> tiles)
