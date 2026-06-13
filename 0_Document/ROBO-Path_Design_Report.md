@@ -97,23 +97,41 @@
 * **Mac Mini $\rightarrow$ Supabase (메타데이터 적재):**
   표준화된 3대 주행 지표($L, S, E$)와 라즈베리파이 로컬 저장소 상의 파일 상대 경로 주소는 C#에서 호출하는 Python 브릿지를 경유하여 Supabase Python SDK를 통해 클라우드 DB 인스턴스에 적재됩니다.
 
-### 4.2 C# - Python 브릿지 및 Supabase 연동 파이프라인
-Unity 환경에서의 데이터 처리를 위해 C#과 Python을 연결하는 하이브리드 파이프라인을 도입합니다.
+### 4.2 양방향 제어 및 데이터 동기화 파이프라인
+사용자의 제어 명령 전달 및 시뮬레이션 결과의 실시간 반영을 위해 다음과 같은 통신 파이프라인을 도입합니다.
+
+#### 4.2.1 사용자 $\rightarrow$ 시뮬레이터 (명령 하달)
+Streamlit 관제 UI에서 발생한 제어 명령은 라즈베리파이의 WebSocket 클라이언트를 거쳐 Unity 내장 서버로 전송됩니다.
+
+```text
+[사용자 조작 (Streamlit)]
+       |
+[Python WebSocket 클라이언트 (bridge.py)]
+       |  (JSON Message 전송, Port: 8765)
+       v
+[Unity 내장 WebSocket 서버 (WebSocketServer.cs)]
+       |
+[시뮬레이션 환경 (NavMeshAgent 제어 등)]
+```
+
+#### 4.2.2 시뮬레이터 $\rightarrow$ 사용자 (데이터 피드백)
+시뮬레이터에서 발생한 위치 변화 및 물리적 통계치 갱신은 Supabase Realtime을 통해 즉각적으로 UI에 반영됩니다.
 
 ```text
 [Unity C# 스크립트]
        |
 [System.Diagnostics.Process (JSON Message)]
        v
-[Python 브릿지 (bridge.py)]
+[Python 브릿지 (서브 프로세스)]
        |
-[Supabase Python SDK]
+[Supabase INSERT / UPDATE]
+       |  (Realtime Subscription)
        v
-[Supabase 클라우드 데이터베이스]
+[Streamlit 대시보드 UI (자동 갱신)]
 ```
 
-* **통신 원리:** Unity 내의 C# 스크립트는 엣지 통과 시마다 피드백 지표 및 노드 발견 이벤트를 JSON으로 직렬화한 후, `System.Diagnostics.Process`를 통해 `bridge.py`를 서브 프로세스로 호출합니다.
-* **환경 변수 구성:** `bridge.py`는 로컬 `.env`에 등록된 `SUPABASE_URL` 및 `SUPABASE_KEY`를 로드하여 보안을 유지한 채 DB API와 통신합니다.
+* **명령 수신:** Mac Mini의 Unity 환경 내부에 8765 포트를 리스닝하는 WebSocket 서버를 가동합니다. 라즈베리파이의 `src/presentation/ros2_bridge/bridge.py`가 이를 호출하여 플랫폼/목적지 지정 등의 JSON 명령을 보냅니다. (`SIMULATOR_HOST` 환경변수 활용)
+* **데이터 송신:** Unity 내의 C# 스크립트는 엣지 통과 시마다 피드백 지표 및 노드 발견 이벤트를 JSON으로 직렬화한 후, Python 서브 프로세스를 통해 Supabase에 적재합니다. Streamlit 대시보드는 이를 Realtime 기능으로 구독하여 별도 API 호출 없이도 지도를 자동 갱신합니다.
 
 ---
 
@@ -279,8 +297,8 @@ CREATE TABLE incidents (
 2. **표준화 주행 지표 (Derived Metrics) 연산식 정의:**
    * 각 기종의 상이한 하드웨어 물리 값을 공통의 언어로 정규화하기 위한 **부하율 ($L$)**, **안정성 지수 ($S$)**, **효율성 지수 ($E$)**의 수학적 정의와 연산 분산 주체를 명시했습니다.
 
-3. **C# - Python 브릿지 연동 파이프라인 수립:**
-   * 무거운 ROS2를 제거하고, Unity의 C# 스크립트에서 엣지 통과 시마다 `bridge.py` 서브 프로세스를 호출하여 JSON 데이터와 함께 Supabase Python SDK로 데이터를 직접 적재하는 직관적이고 가벼운 하이브리드 제어 구조를 정립했습니다.
+3. **양방향 통신 브릿지 및 Realtime 파이프라인 수립:**
+   * Streamlit에서 맥미니의 Unity 내장 WebSocket 서버(`WebSocketServer.cs`)로 제어 명령을 JSON 형태로 쏘고, Unity에서 생성된 데이터는 Python 프로세스를 거쳐 Supabase에 적재된 뒤 Streamlit의 Realtime 구독으로 자동 갱신되는 클린 아키텍처를 정립했습니다.
 
 4. **지도 및 프로필 세맨틱 버전 관리 전략:**
    * 대규모 구조 변형을 의미하는 메이저 버전과 탐험을 통한 노드/엣지 확장을 뜻하는 마이너 버전을 분리하고, 테이블 스키마에 `version_added` 컬럼을 개설하여 언제든 탐험 차수별로 롤백 및 데이터 필터링이 가능하도록 설계했습니다.

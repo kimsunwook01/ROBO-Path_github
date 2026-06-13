@@ -39,6 +39,8 @@ pip install -r requirements.txt
 # .env 파일을 프로젝트 루트에 생성하고 아래 필수 값들을 채웁니다. (GitHub Secrets 활용 권장)
 # SUPABASE_URL=...
 # SUPABASE_KEY=...
+# SIMULATOR_HOST=192.168.x.x  # 맥미니 로컬 IP
+# SIMULATOR_WS_PORT=8765       # Unity WebSocket 포트
 ```
 
 ---
@@ -56,7 +58,7 @@ ROBO-Path_project/
 │   ├── domain/                  # 핵심 알고리즘(A*) 및 Pydantic 데이터 모델
 │   ├── application/             # Use Case 및 Repository 인터페이스(Protocol)
 │   ├── infrastructure/          # 외부 기술 구현체 (Supabase DB, FastAPI Storage)
-│   └── presentation/            # UI 및 외부 진입점 (Streamlit Dashboard, C#-Python Bridge)
+│   └── presentation/            # UI 및 외부 진입점 (Streamlit Dashboard, WebSocket Client Bridge)
 ├── tests/                       # 단위/통합 테스트 스크립트
 ├── environment.yml              # Conda 환경 의존성
 ├── requirements.txt             # Pip 의존성 목록

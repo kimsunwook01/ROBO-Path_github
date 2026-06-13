@@ -62,13 +62,14 @@
   - [ ] [Phase 1] Unity 프로젝트 생성 및 GitHub 연동 (.gitignore 설정)
   - [ ] [Phase 2] 500m x 500m 가상 캠퍼스 맵 제작 (Terrain + ProBuilder) 및 NavMesh 베이크
   - [ ] [Phase 3] 로봇 2종(Wheeled/Legged) 구현 (NavMesh + Raycast + 피드백 계산 로직)
-  - [ ] [Phase 4] C# Python 브릿지(`bridge.py`) 및 Supabase 연동 로직 작성
+  - [ ] [Phase 4] Unity 내장 WebSocket 서버(`WebSocketServer.cs`) 및 C# Python 브릿지(Supabase 적재) 로직 작성
   - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축
-- [ ] **8. 관제 대시보드 UI 구축 (`src/presentation/dashboard/`)**
+- [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
   - [x] [Phase 1] Supabase-Streamlit 데이터 연동 검증 및 테이블 출력 (`app.py`) - **완료**
-  - [ ] [Phase 2] Plotly 2D 지도 시각화 (BASE, DISCOVERED 노드 및 로봇 현재 위치)
-  - [ ] [Phase 3] A* 경로 탐색 UI (플랫폼 선택, 출발지/목적지, 경로 하이라이트)
-  - [ ] [Phase 4] Supabase Realtime 구독으로 지도 실시간 업데이트
+  - [ ] [Phase 2] Streamlit $\rightarrow$ Unity 통신용 Python WebSocket 클라이언트(`ros2_bridge/bridge.py`) 작성
+  - [ ] [Phase 3] Plotly 2D 지도 시각화 (BASE, DISCOVERED 노드 및 로봇 현재 위치)
+  - [ ] [Phase 4] A* 경로 탐색 UI (플랫폼 선택, 출발지/목적지, 경로 하이라이트 및 시뮬레이션 명령 송신)
+  - [ ] [Phase 5] Supabase Realtime 구독으로 지도 실시간 업데이트
 - [x] **9. 에지 서버(라즈베리파이) 인프라 구현 (`src/infrastructure/storage/`)**
   - [x] GitHub Actions CI/CD 구축, SSD 마운트, FastAPI 구현, Systemd/Nginx 세팅 완료
 
