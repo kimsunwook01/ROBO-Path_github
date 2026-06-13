@@ -1,7 +1,10 @@
 from typing import List, Optional
+import logging
 from supabase import Client
 from src.domain.models import Edge
 from src.application.interfaces import EdgeRepository
+
+logger = logging.getLogger(__name__)
 
 class SupabaseEdgeRepository(EdgeRepository):
     def __init__(self, db_client: Client):
@@ -14,7 +17,11 @@ class SupabaseEdgeRepository(EdgeRepository):
                 return Edge(**response.data[0])
             return None
         except Exception as e:
-            print(f"Error fetching edge by id: {e}")
+            error_msg = str(e).lower()
+            if "connection" in error_msg or "timeout" in error_msg or "network" in error_msg:
+                logger.error(f"Network/Connection error fetching edge by id: {e}", exc_info=True)
+            else:
+                logger.error(f"Data/Parsing error fetching edge by id: {e}", exc_info=True)
             return None
 
     def get_edges_by_node(self, from_node_id: str) -> List[Edge]:
@@ -22,5 +29,9 @@ class SupabaseEdgeRepository(EdgeRepository):
             response = self.db.table("map_edges").select("*").eq("from_node_id", from_node_id).execute()
             return [Edge(**item) for item in response.data]
         except Exception as e:
-            print(f"Error fetching edges by node: {e}")
+            error_msg = str(e).lower()
+            if "connection" in error_msg or "timeout" in error_msg or "network" in error_msg:
+                logger.error(f"Network/Connection error fetching edges by node: {e}", exc_info=True)
+            else:
+                logger.error(f"Data/Parsing error fetching edges by node: {e}", exc_info=True)
             return []

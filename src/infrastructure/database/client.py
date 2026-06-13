@@ -25,7 +25,9 @@ class SupabaseClient:
         
         # 만약 환경변수가 없다면 초기화를 실패하거나 더미 동작을 할 수 있도록 방어 코드 추가 가능
         if not url or not key:
-            print("WARNING: SUPABASE_URL or SUPABASE_KEY is not set in environment variables.")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("SUPABASE_URL or SUPABASE_KEY is not set in environment variables.")
         else:
             self._client = create_client(url, key)
 

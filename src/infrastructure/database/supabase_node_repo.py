@@ -1,7 +1,10 @@
 from typing import List, Optional
+import logging
 from supabase import Client
 from src.domain.models import Node, BaseLocation, DiscoveredNode
 from src.application.interfaces import NodeRepository
+
+logger = logging.getLogger(__name__)
 
 class SupabaseNodeRepository(NodeRepository):
     def __init__(self, db_client: Client):
@@ -25,7 +28,11 @@ class SupabaseNodeRepository(NodeRepository):
                 return self._map_to_node_model(response.data[0])
             return None
         except Exception as e:
-            print(f"Error fetching node by id: {e}")
+            error_msg = str(e).lower()
+            if "connection" in error_msg or "timeout" in error_msg or "network" in error_msg:
+                logger.error(f"Network/Connection error fetching node by id: {e}", exc_info=True)
+            else:
+                logger.error(f"Data/Parsing error fetching node by id: {e}", exc_info=True)
             return None
 
     def get_all_nodes(self) -> List[Node]:
@@ -33,5 +40,9 @@ class SupabaseNodeRepository(NodeRepository):
             response = self.db.table("nodes").select("*").execute()
             return [self._map_to_node_model(item) for item in response.data]
         except Exception as e:
-            print(f"Error fetching all nodes: {e}")
+            error_msg = str(e).lower()
+            if "connection" in error_msg or "timeout" in error_msg or "network" in error_msg:
+                logger.error(f"Network/Connection error fetching all nodes: {e}", exc_info=True)
+            else:
+                logger.error(f"Data/Parsing error fetching all nodes: {e}", exc_info=True)
             return []
