@@ -23,8 +23,14 @@
   2. **의존성 주입 (DI):** DB 통신 로직은 `infrastructure` 계층에 작성하고, 인터페이스(Protocol)를 통해 `application` 계층에 주입하여 결합도를 낮춰야 합니다.
   3. **데이터 검증:** 모든 DB 삽입 전후에는 반드시 `Pydantic` 클래스를 통해 타입 및 값의 무결성을 검증해야 합니다.
 
+### 2.1 고정 문서 관리 규칙 (Frozen Documents)
+다음 문서는 특정 시점의 설계 스냅샷을 영구 보존하기 위해 **고정(Frozen)** 처리되었습니다.
+- **`0_Document/ROBO-Path_Migration_Decision_Report.md`**
+> **AI 지시사항:** 문서 최신화, 일괄 용어 수정, 구조 정리, 내용 갱신 등 어떠한 문서 수정 지시가 있더라도 위 고정 문서들은 항상 대상에서 **제외**하십시오. 현재 프로젝트 구조와 불일치하는 내용이 발견되더라도 당시의 맥락 보존을 위해 절대로 수정하지 마십시오.
+
 ## 3. 관련 문서 링크 (Related Documents)
 자세한 기술 명세가 필요할 경우 아래 문서들을 참조하세요.
+- (고정) 설계 전환 의사결정 기록: `0_Document/ROBO-Path_Migration_Decision_Report.md`
 - 전체 기획 및 분산 처리 명세: `0_Document/ROBO-Path_Design_Report.md`
 - 데이터베이스 ERD 및 DDL 스키마: `0_Document/ROBO-Path_Supabase_DB_Architecture.md`
 - 폴더 구조 및 계층별 분리 전략: `0_Document/ROBO-Path_Software_Architecture.md`
