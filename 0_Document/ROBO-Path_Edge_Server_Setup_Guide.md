@@ -280,7 +280,7 @@ pip install fastapi uvicorn streamlit python-multipart supabase websocket-client
 워크스테이션(NVIDIA Isaac Sim)에서 생성된 엄청난 용량의 PCD 데이터와 CSV 로그를 수신하기 위한 백엔드 엔드포인트를 구축합니다.
 
 **파일 위치:** `src/infrastructure/storage/api.py` (신규 생성)
-- `POST /upload/pcd`: 멀티파트 폼 데이터로 3D 맵(`.pcd`) 파일을 받아 `/mnt/ssd/robo-path-data/pcd/`에 저장하고 다운로드 URL을 반환.
+- `POST /upload/pcd`: 멀티파트 폼 데이터로 3D 맵(`.pcd`) 및 탐색 복셀 데이터를 받아 `/mnt/ssd/robo-path-data/pcd/`에 저장하고 다운로드 URL을 반환.
 - `POST /upload/log`: 주행 로그(`.csv`)를 받아 `/mnt/ssd/robo-path-data/logs/`에 저장하고 반환.
 - `GET /files/{file_path}`: 저장된 정적 파일을 외부에 제공하기 위한 정적 라우팅 설정.
 
@@ -357,7 +357,7 @@ server {
 │           │   └── presentation/
 │           │       ├── dashboard/           # (미구현) Streamlit 관제 대시보드
 │           │       │   └── app.py
-│           │       └── ros2_bridge/         # (미구현) WebSocket-ROS2 브릿지
+│           │       └── ros2_bridge/         # (미구현) 시뮬레이터 명령 수신용 웹소켓 브릿지
 │           │           └── bridge.py
 │           ├── config/                      # 라즈베리파이 전용 시스템 설정 파일 (Git 버전 관리됨)
 │           │   ├── pi_services/             # Systemd 서비스 유닛 파일 템플릿
@@ -374,7 +374,7 @@ server {
 └── mnt/
     └── ssd/
         └── robo-path-data/                  # 1TB SSD 마운트 (대용량 데이터 전용)
-            ├── pcd/                         # 3D 포인트 클라우드 맵 파일 (.pcd)
+            ├── pcd/                         # 3D 포인트 클라우드 맵(.pcd) 및 탐색 복셀 데이터(Octree 직렬화)
             │   └── YYYY-MM-DD/              # 날짜별 서브 디렉터리로 정리
             ├── logs/                        # 주행 로그 파일 (.csv)
             │   └── YYYY-MM-DD/

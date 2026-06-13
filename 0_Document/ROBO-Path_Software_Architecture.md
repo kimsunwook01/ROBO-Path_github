@@ -45,13 +45,15 @@ src/
 │   │   └── supabase_node_repo.py
 │   ├── storage/                 # 라즈베리파이 로컬 파일 시스템 제어 구현체 🔲 미구현
 │   │   └── api.py               # (예정) FastAPI 스토리지 서버 진입점
+│   ├── bridge/                  # 시뮬레이터 통신 브릿지 (경량 지표 전송용) 🔲 미구현
+│   │   └── bridge.py            # (예정) Unity -> Supabase 메타데이터 전송
 │   └── llm/                     # Google Gemini API 호출 구현체 🔲 미구현
 │
 └── presentation/                # 4. 프레젠테이션 계층 (UI 및 진입점)
     ├── dashboard/               # Streamlit 관제 웹 화면 🔲 미구현
     │   └── app.py               # (예정) 관제 대시보드 진입점
-    └── ros2_bridge/             # WebSocket-ROS2 제어 브릿지 🔲 미구현
-        └── bridge.py            # (예정) 웹소켓 서버 진입점
+    └── ros2_bridge/             # WebSocket 클라이언트 브릿지 (시뮬레이터 명령 수신) 🔲 미구현
+        └── bridge.py            # (예정) 웹소켓 명령 수신 진입점
 ```
 
 ### 2.2 전체 프로젝트 루트 구조
@@ -79,7 +81,7 @@ ROBO-Path_project/               # 리포지토리 루트
 ├── supabase/                    # Supabase 마이그레이션 SQL 파일
 ├── tests/                       # 테스트 코드
 ├── 0_Document/                  # 프로젝트 기술 문서
-├── requirements.txt             # Python 패키지 목록 (워크스테이션 + 파이 공용)
+├── requirements.txt             # Python 패키지 목록 (맥미니 + 파이 공용)
 ├── environment.yml              # Conda 환경 정의
 └── .env                         # 환경 변수 (Git 추적 제외)
 ```
