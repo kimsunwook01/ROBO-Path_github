@@ -173,8 +173,7 @@
             "tile": "Tile_Flat_00",
             "adjacent_to": [
                 "Tile_Flat_01",
-                "Tile_Flat_03",
-                "Tile_Flat_04"
+                "Tile_Flat_03"
             ]
         },
         {
@@ -182,16 +181,13 @@
             "adjacent_to": [
                 "Tile_Flat_00",
                 "Tile_Flat_02",
-                "Tile_Flat_03",
-                "Tile_Flat_04",
-                "Tile_Flat_05"
+                "Tile_Flat_04"
             ]
         },
         {
             "tile": "Tile_Flat_02",
             "adjacent_to": [
                 "Tile_Flat_01",
-                "Tile_Flat_04",
                 "Tile_Flat_05"
             ]
         },
@@ -199,32 +195,24 @@
             "tile": "Tile_Flat_03",
             "adjacent_to": [
                 "Tile_Flat_00",
-                "Tile_Flat_01",
                 "Tile_Flat_04",
-                "Tile_Flat_06",
-                "Tile_Flat_07"
+                "Tile_Flat_06"
             ]
         },
         {
             "tile": "Tile_Flat_04",
             "adjacent_to": [
-                "Tile_Flat_00",
                 "Tile_Flat_01",
-                "Tile_Flat_02",
                 "Tile_Flat_03",
                 "Tile_Flat_05",
-                "Tile_Flat_06",
-                "Tile_Flat_07",
-                "Tile_Flat_08"
+                "Tile_Flat_07"
             ]
         },
         {
             "tile": "Tile_Flat_05",
             "adjacent_to": [
-                "Tile_Flat_01",
                 "Tile_Flat_02",
                 "Tile_Flat_04",
-                "Tile_Flat_07",
                 "Tile_Flat_08"
             ]
         },
@@ -232,16 +220,13 @@
             "tile": "Tile_Flat_06",
             "adjacent_to": [
                 "Tile_Flat_03",
-                "Tile_Flat_04",
                 "Tile_Flat_07"
             ]
         },
         {
             "tile": "Tile_Flat_07",
             "adjacent_to": [
-                "Tile_Flat_03",
                 "Tile_Flat_04",
-                "Tile_Flat_05",
                 "Tile_Flat_06",
                 "Tile_Flat_08"
             ]
@@ -249,7 +234,6 @@
         {
             "tile": "Tile_Flat_08",
             "adjacent_to": [
-                "Tile_Flat_04",
                 "Tile_Flat_05",
                 "Tile_Flat_07"
             ]
