@@ -154,7 +154,7 @@ namespace ROBOPath.Debug.Editor
                 rotation_y = go.transform.rotation.eulerAngles.y,
                 size = new Vector3Data(bounds.size),
                 terrain_type = go.tag,
-                elevation = bounds.center.y
+                elevation = bounds.max.y
             };
         }
 
