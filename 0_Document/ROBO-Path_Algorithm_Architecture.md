@@ -22,10 +22,10 @@
   - $W_E$: 효율성 민감도
 
 ### 1.2 비용 산출 수식 (Cost Formula)
-경로 탐색 시 물리적 거리(`distance_m`)를 기본 비용으로 하되, 하드웨어 피드백 페널티를 곱하여 거리가 짧아도 주행이 험난한 경로의 가중치를 높입니다.
+경로 탐색 시 물리적 거리(`distance_m`)를 기본 비용으로 하되, 통행 정책 계수(`cost_multiplier`)와 하드웨어 피드백 페널티를 곱하여 거리가 짧아도 주행이 험난하거나 정책상 억제된 경로의 가중치를 높입니다.
 
 $$
-Cost = distance\_m \times \left[ 1 + \left( W_L \times L \right) + \left( W_S \times (1 - S) \right) + \left( W_E \times (1 - E) \right) \right]
+Cost = distance\_m \times cost\_multiplier \times \left[ 1 + \left( W_L \times L \right) + \left( W_S \times (1 - S) \right) + \left( W_E \times (1 - E) \right) \right]
 $$
 
 - $S$와 $E$는 1에 가까울수록 좋은 지표이므로, $(1 - S)$와 $(1 - E)$로 역산하여 페널티로 변환합니다.
