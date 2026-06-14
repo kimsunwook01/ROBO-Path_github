@@ -37,9 +37,20 @@ namespace ROBOPath.Debug.Editor
             float minElevation = float.MaxValue;
             float maxElevation = float.MinValue;
 
+            List<string> suspectedMissingTags = new List<string>();
+            var allValidTags = nodeTags.Concat(tileTags).Concat(obstacleTags).ToList();
+
             foreach (var go in allObjects)
             {
                 if (!go.activeInHierarchy) continue;
+
+                if (go.GetComponent<MeshRenderer>() != null)
+                {
+                    if (go.tag == "Untagged" || !allValidTags.Contains(go.tag))
+                    {
+                        suspectedMissingTags.Add(go.name);
+                    }
+                }
 
                 if (nodeTags.Contains(go.tag))
                 {
@@ -107,6 +118,15 @@ namespace ROBOPath.Debug.Editor
 
             string filePath = Path.Combine(targetDir, "scene_dump.json");
             File.WriteAllText(filePath, json);
+
+            if (suspectedMissingTags.Count > 0)
+            {
+                UnityEngine.Debug.LogWarning($"[SceneDump] 태그 누락 의심 오브젝트 {suspectedMissingTags.Count}개: {string.Join(", ", suspectedMissingTags)}");
+            }
+            else
+            {
+                UnityEngine.Debug.Log("[SceneDump] 태그 누락 의심 오브젝트 없음");
+            }
 
             UnityEngine.Debug.Log($"[ROBO-Path] Scene Dump Exported to: {filePath}\nNodes: {dump.nodes.Count}, Tiles: {dump.tiles.Count}, Obstacles: {dump.obstacles.Count}");
         }
