@@ -1,7 +1,7 @@
 {
     "summary": {
         "total_nodes": 0,
-        "total_tiles": 2,
+        "total_tiles": 3,
         "total_obstacles": 0,
         "min_elevation": 0.0,
         "max_elevation": 2.0,
@@ -46,8 +46,45 @@
             },
             "terrain_type": "Terrain_Flat",
             "elevation": 2.0
+        },
+        {
+            "name": "Prism",
+            "tag": "Path_Ramp",
+            "position": {
+                "x": 10.0,
+                "y": 1.0,
+                "z": 0.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Path_Ramp",
+            "elevation": 2.0
         }
     ],
     "obstacles": [],
-    "adjacency": []
+    "adjacency": [
+        {
+            "tile": "Flat_Low",
+            "adjacent_to": [
+                "Prism"
+            ]
+        },
+        {
+            "tile": "Flat_High",
+            "adjacent_to": [
+                "Prism"
+            ]
+        },
+        {
+            "tile": "Prism",
+            "adjacent_to": [
+                "Flat_Low",
+                "Flat_High"
+            ]
+        }
+    ]
 }
