@@ -28,6 +28,12 @@
 - **`0_Document/ROBO-Path_Migration_Decision_Report.md`**
 > **AI 지시사항:** 문서 최신화, 일괄 용어 수정, 구조 정리, 내용 갱신 등 어떠한 문서 수정 지시가 있더라도 위 고정 문서들은 항상 대상에서 **제외**하십시오. 현재 프로젝트 구조와 불일치하는 내용이 발견되더라도 당시의 맥락 보존을 위해 절대로 수정하지 마십시오.
 
+### 2.2 Git 커밋 표준 절차 (Standard Commit Procedure)
+Unity 기반 프로젝트에서 에셋 누락을 방지하기 위해 매 커밋 시 다음 절차를 반드시 따릅니다.
+1. **산출물 생성 완료 확인 (Wait & Check):** Unity `-batchmode` 등의 실행 후 고정 시간에 의존하지 않고, `git status`를 짧게 반복 확인하여 기대한 산출물(`.meta`, `.asset`, `scene_dump.json` 등)이 모두 기록되었는지 검증합니다.
+2. **포괄적 Staging (Add):** 디렉토리 단위 포괄 `git add`를 사용하여 `.meta` 파일 누락을 방지합니다.
+3. **Amend 절대 금지 (No Amend):** 어떠한 경우에도 `git commit --amend`를 사용하지 않습니다. 뒤늦게 발견된 누락본은 `FIX: 누락본 추가` 형태의 후속 일반 커밋으로 처리합니다.
+4. **사후 검증 (Post-Commit Check):** 커밋 직후 `git status`를 실행하여 Working Tree가 완전히 `clean`한 지 확인합니다. `clean` 상태가 아니라면 남은 파일을 후속 커밋으로 처리하고, `clean`이 될 때까지 반복합니다.
 ## 3. 관련 문서 링크 (Related Documents)
 자세한 기술 명세가 필요할 경우 아래 문서들을 참조하세요.
 - (고정) 설계 전환 의사결정 기록: `0_Document/ROBO-Path_Migration_Decision_Report.md`

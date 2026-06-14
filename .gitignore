@@ -71,3 +71,6 @@ dist/
 *.idb
 .vs/
 .gradle/
+
+# Ignore ProBuilder Settings
+Unity/ROBO-Path-Simulator/ProjectSettings/Packages/com.unity.probuilder/Settings.json
