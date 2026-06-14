@@ -39,7 +39,7 @@
 - LLM 기반 피드백 지식화 파이프라인 설계: `0_Document/ROBO-Path_LLM_Pipeline_Design.md`
 - 맵 설계 및 비용 프로파일 명세: `0_Document/ROBO-Path_Map_Design_Specification.md`
 - 씬 덤프 도구 명세: `0_Document/ROBO-Path_Scene_Dump_Specification.md`
-
+- 맵 에디터 도구 설계: `0_Document/ROBO-Path_Map_Editor_Tool_Design.md`
 ---
 
 ## 4. 진행 상황 타임라인 (Current Status & Next Steps)
