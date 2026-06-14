@@ -1,20 +1,20 @@
 {
     "summary": {
         "total_nodes": 0,
-        "total_tiles": 9,
+        "total_tiles": 2,
         "total_obstacles": 0,
         "min_elevation": 0.0,
-        "max_elevation": 0.0,
+        "max_elevation": 2.0,
         "map_size": {
             "x": 30.0,
-            "y": 10.0,
-            "z": 30.0
+            "y": 12.0,
+            "z": 10.0
         }
     },
     "nodes": [],
     "tiles": [
         {
-            "name": "Tile_Flat_00",
+            "name": "Flat_Low",
             "tag": "Terrain_Flat",
             "position": {
                 "x": 0.0,
@@ -31,11 +31,11 @@
             "elevation": 0.0
         },
         {
-            "name": "Tile_Flat_01",
+            "name": "Flat_High",
             "tag": "Terrain_Flat",
             "position": {
-                "x": 10.0,
-                "y": -5.0,
+                "x": 20.0,
+                "y": -3.0,
                 "z": 0.0
             },
             "rotation_y": 0.0,
@@ -45,198 +45,9 @@
                 "z": 10.0
             },
             "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_02",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 20.0,
-                "y": -5.0,
-                "z": 0.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_03",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 0.0,
-                "y": -5.0,
-                "z": 10.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_04",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 10.0,
-                "y": -5.0,
-                "z": 10.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_05",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 20.0,
-                "y": -5.0,
-                "z": 10.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_06",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 0.0,
-                "y": -5.0,
-                "z": 20.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_07",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 10.0,
-                "y": -5.0,
-                "z": 20.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Tile_Flat_08",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 20.0,
-                "y": -5.0,
-                "z": 20.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
+            "elevation": 2.0
         }
     ],
     "obstacles": [],
-    "adjacency": [
-        {
-            "tile": "Tile_Flat_00",
-            "adjacent_to": [
-                "Tile_Flat_01",
-                "Tile_Flat_03"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_01",
-            "adjacent_to": [
-                "Tile_Flat_00",
-                "Tile_Flat_02",
-                "Tile_Flat_04"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_02",
-            "adjacent_to": [
-                "Tile_Flat_01",
-                "Tile_Flat_05"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_03",
-            "adjacent_to": [
-                "Tile_Flat_00",
-                "Tile_Flat_04",
-                "Tile_Flat_06"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_04",
-            "adjacent_to": [
-                "Tile_Flat_01",
-                "Tile_Flat_03",
-                "Tile_Flat_05",
-                "Tile_Flat_07"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_05",
-            "adjacent_to": [
-                "Tile_Flat_02",
-                "Tile_Flat_04",
-                "Tile_Flat_08"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_06",
-            "adjacent_to": [
-                "Tile_Flat_03",
-                "Tile_Flat_07"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_07",
-            "adjacent_to": [
-                "Tile_Flat_04",
-                "Tile_Flat_06",
-                "Tile_Flat_08"
-            ]
-        },
-        {
-            "tile": "Tile_Flat_08",
-            "adjacent_to": [
-                "Tile_Flat_05",
-                "Tile_Flat_07"
-            ]
-        }
-    ]
+    "adjacency": []
 }
