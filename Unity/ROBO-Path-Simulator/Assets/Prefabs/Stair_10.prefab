@@ -60,7 +60,7 @@ MonoBehaviour:
       m_Fill: 1
       m_Scale: {x: 1, y: 1}
       m_Offset: {x: 0, y: 0}
-      m_Rotation: 0
+      m_Rotation: 90
       m_Anchor: 9
     m_Material: {fileID: 2100000, guid: c22777d6e868e4f2fb421913386b154e, type: 2}
     m_SubmeshIndex: 0
@@ -111,7 +111,7 @@ MonoBehaviour:
       m_Fill: 1
       m_Scale: {x: 1, y: 1}
       m_Offset: {x: 0, y: 0}
-      m_Rotation: 0
+      m_Rotation: 90
       m_Anchor: 9
     m_Material: {fileID: 2100000, guid: c22777d6e868e4f2fb421913386b154e, type: 2}
     m_SubmeshIndex: 0
@@ -163,9 +163,9 @@ MonoBehaviour:
   - {x: -5, y: -5, z: 5}
   - {x: 5, y: -5, z: 5}
   m_Textures0:
+  - {x: -5, y: 5}
   - {x: -5, y: -5}
   - {x: 5, y: -5}
-  - {x: 5, y: 5}
   - {x: -5, y: -5}
   - {x: 5, y: -5}
   - {x: -5, y: 5}
@@ -173,10 +173,10 @@ MonoBehaviour:
   - {x: -5, y: -5}
   - {x: 5, y: -5}
   - {x: -5, y: 5}
-  - {x: -7.071068, y: 5}
-  - {x: -7.071068, y: -5}
-  - {x: 7.071068, y: 5}
-  - {x: 7.071068, y: -5}
+  - {x: 5.0000005, y: 7.071068}
+  - {x: -4.9999995, y: 7.071068}
+  - {x: 4.9999995, y: -7.071068}
+  - {x: -5.0000005, y: -7.071068}
   - {x: 5, y: -5}
   - {x: -5, y: -5}
   - {x: 5, y: 5}
@@ -184,9 +184,9 @@ MonoBehaviour:
   m_Textures2: []
   m_Textures3: []
   m_Tangents:
-  - {x: 1, y: 0, z: 0, w: -1}
-  - {x: 1, y: 0, z: 0, w: -1}
-  - {x: 1, y: 0, z: 0, w: -1}
+  - {x: 0, y: 1, z: 0, w: -1}
+  - {x: 0, y: 1, z: 0, w: -1}
+  - {x: 0, y: 1, z: 0, w: -1}
   - {x: 0, y: 0, z: 1, w: -1}
   - {x: 0, y: 0, z: 1, w: -1}
   - {x: 0, y: 0, z: 1, w: -1}
@@ -194,10 +194,10 @@ MonoBehaviour:
   - {x: -1, y: 0, z: 0, w: -1}
   - {x: -1, y: 0, z: 0, w: -1}
   - {x: -1, y: 0, z: 0, w: -1}
-  - {x: 0.7071068, y: 0.7071068, z: 0, w: -1}
-  - {x: 0.7071068, y: 0.7071068, z: 0, w: -1}
-  - {x: 0.7071068, y: 0.7071068, z: 0, w: -1}
-  - {x: 0.7071068, y: 0.7071068, z: 0, w: -1}
+  - {x: 0, y: 0, z: 1, w: -1}
+  - {x: 0, y: 0, z: 1, w: -1}
+  - {x: 0, y: 0, z: 1, w: -1}
+  - {x: 0, y: 0, z: 1, w: -1}
   - {x: -1, y: 0, z: 0, w: -1}
   - {x: -1, y: 0, z: 0, w: -1}
   - {x: -1, y: 0, z: 0, w: -1}
@@ -211,7 +211,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 2321
+  m_VersionIndex: 2915
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
