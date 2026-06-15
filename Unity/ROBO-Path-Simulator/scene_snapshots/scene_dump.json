@@ -1,7 +1,7 @@
 {
     "summary": {
         "total_nodes": 34,
-        "total_tiles": 3161,
+        "total_tiles": 3162,
         "total_overlay_tiles": 74,
         "total_obstacles": 0,
         "min_elevation": -6.0,
@@ -57490,6 +57490,24 @@
             },
             "terrain_type": "Path_Ramp",
             "elevation": 82.0
+        },
+        {
+            "id": "Stair_2_x-11_z-9_y17_r180",
+            "name": "Stair_2",
+            "tag": "Path_Stair",
+            "position": {
+                "x": -105.0,
+                "y": 17.0,
+                "z": -85.0
+            },
+            "rotation_y": 180.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Path_Stair",
+            "elevation": 18.0
         }
     ],
     "overlay_tiles": [
@@ -73942,7 +73960,8 @@
                 "Ramp_2_x-11_z-8_y11_r180",
                 "Ramp_2_x-12_z-8_y13_r180",
                 "Flat_10_x-11_z-9_y5_r0",
-                "Flat_6_x-11_z-9_y13_r0"
+                "Flat_6_x-11_z-9_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74069,7 +74088,8 @@
                 "Ramp_2_x-11_z-7_y11_r180",
                 "Ramp_2_x-12_z-8_y13_r180",
                 "Flat_10_x-11_z-9_y5_r0",
-                "Flat_6_x-11_z-9_y13_r0"
+                "Flat_6_x-11_z-9_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74570,7 +74590,8 @@
                 "Flat_6_x-11_z-9_y13_r0",
                 "Flat_6_x-10_z-9_y13_r0",
                 "Flat_6_x-9_z-9_y13_r0",
-                "Flat_6_x-10_z-10_y13_r0"
+                "Flat_6_x-10_z-10_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74627,7 +74648,8 @@
                 "Flat_6_x-11_z-10_y13_r0",
                 "Flat_6_x-10_z-9_y13_r0",
                 "Flat_2_x-12_z-9_y17_r0",
-                "Flat_8_x-12_z-9_y12_r0"
+                "Flat_8_x-12_z-9_y12_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74640,7 +74662,8 @@
                 "Flat_6_x-11_z-10_y13_r0",
                 "Flat_6_x-11_z-11_y13_r0",
                 "Flat_6_x-10_z-10_y13_r0",
-                "Flat_10_x-12_z-10_y13_r0"
+                "Flat_10_x-12_z-10_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74681,7 +74704,8 @@
                 "Flat_6_x-11_z-10_y13_r0",
                 "Flat_6_x-10_z-9_y13_r0",
                 "Flat_2_x-12_z-9_y17_r0",
-                "Flat_8_x-12_z-9_y12_r0"
+                "Flat_8_x-12_z-9_y12_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74694,7 +74718,8 @@
                 "Flat_6_x-11_z-9_y13_r0",
                 "Flat_6_x-11_z-11_y13_r0",
                 "Flat_6_x-10_z-10_y13_r0",
-                "Flat_10_x-12_z-10_y13_r0"
+                "Flat_10_x-12_z-10_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -74734,7 +74759,8 @@
                 "Flat_10_x-11_z-9_y5_r0",
                 "Flat_6_x-11_z-9_y13_r0",
                 "Flat_6_x-9_z-9_y13_r0",
-                "Flat_6_x-10_z-10_y13_r0"
+                "Flat_6_x-10_z-10_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -76161,7 +76187,8 @@
                 "Flat_2_x-13_z-9_y17_r0",
                 "Flat_8_x-12_z-9_y12_r0",
                 "Flat_8_x-13_z-9_y12_r0",
-                "Flat_10_x-12_z-10_y13_r0"
+                "Flat_10_x-12_z-10_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -76174,7 +76201,8 @@
                 "Flat_2_x-13_z-9_y17_r0",
                 "Flat_2_x-12_z-9_y17_r0",
                 "Flat_8_x-13_z-9_y12_r0",
-                "Flat_10_x-12_z-10_y13_r0"
+                "Flat_10_x-12_z-10_y13_r0",
+                "Stair_2_x-11_z-9_y17_r180"
             ]
         },
         {
@@ -107319,6 +107347,21 @@
                 "Flat_10_x-2_z21_y77_r0",
                 "Ramp_10_x0_z21_y67_r180",
                 "Ramp_10_x-1_z22_y77_r180"
+            ]
+        },
+        {
+            "id": "Stair_2_x-11_z-9_y17_r180",
+            "adjacent_to": [
+                "Flat_10_x-11_z-8_y5_r0",
+                "Ramp_2_x-11_z-8_y11_r180",
+                "Flat_10_x-10_z-9_y5_r0",
+                "Flat_10_x-11_z-9_y5_r0",
+                "Flat_10_x-11_z-10_y5_r0",
+                "Flat_6_x-11_z-9_y13_r0",
+                "Flat_6_x-11_z-10_y13_r0",
+                "Flat_6_x-10_z-9_y13_r0",
+                "Flat_2_x-12_z-9_y17_r0",
+                "Flat_8_x-12_z-9_y12_r0"
             ]
         }
     ]

@@ -9,27 +9,41 @@
 ## 2. 수집 범위 및 섹션 구조
 - 씬의 모든 관련 오브젝트를 수집하되, 하나의 JSON 파일 안에서 목적별 섹션(테이블)으로 분리한다. AI는 목적에 따라 필요한 섹션만 읽어 정보 과부하를 피한다.
 - 섹션 구성:
-  - `summary`: 전체 통계 (맵 크기, 각 섹션 오브젝트 수, 고도 범위 등 한눈에 파악용)
-  - `nodes`: 거점(`Node_Station`, `Node_Pickup`, `Node_Destination`) 및 `Waypoint`
-  - `tiles`: 지형/경로/노면 타일 (`Terrain_*`, `Path_*`, `Road_*`)
+  - `summary`: 전체 통계 (맵 크기, 각 섹션 오브젝트 수(total_nodes, total_tiles, total_overlay_tiles, total_obstacles), 고도 범위(min/max_elevation) 등)
+  - `nodes`: 거점 타일 (`Node_Station`, `Node_Pickup`, `Node_Destination`)
+  - `tiles`: 지형/경로/노면 블록 (`Terrain_*`, `Path_*`, `Road_*`). 로봇 주행면.
+  - `overlay_tiles`: 블록 위에 얹히는 영역 속성 타일 (`Crosswalk`, `Tile_Hazard`)
   - `obstacles`: 장애물 (`Building`, `Obstacle`, `Prop_Pole`, `Prop_Tree`)
-  - `adjacency`: 타일 간 인접 관계 (그래프 연결성)
+  - `adjacency`: 블록 간 4방향 인접. 고유 ID를 기반으로 기록.
 
 ## 3. 필드 스키마
 
 ### 3.1 모든 오브젝트 공통 필드
+- `id`: 객체 고유 ID. 형식: `{이름}_x{gx}_z{gz}_y{높이}_r{회전}`
+  - `gx`, `gz`: 격자 칸 인덱스 (칸 중심 +5 보정을 역산한 값)
+  - `높이`: `position.y` 정수 반올림 (같은 칸 내 적층 블록 구분용)
+  - `회전`: `rotation_y` 정수 반올림 (0/90/180/270, 경사 방향 의미)
+  - 예: `Flat_2_x0_z-2_y1_r0`
+  - 이 ID는 종류, 위치, 높이, 회전을 담아 완전히 고유하며, A* 그래프 노드 식별자로 쓰인다.
 - `name`: 오브젝트 이름
 - `tag`: 맵 설계 명세의 5계열 태그 중 하나
 - `position`: `{ x, y, z }`
 - `rotation_y`: y축 회전각 (도 단위, 대부분 y축만 의미 있음)
-- `size`: `{ width, depth, height }` (바운딩 박스 기준)
+- `size`: `{ x, y, z }` (바운딩 박스 기준)
 
 ### 3.2 거점(nodes 섹션) 추가 필드
-- `usage`: `"station"` | `"pickup"` | `"destination"` | `null` (`Waypoint`는 `null`)
+- `usage`: `"station"` | `"pickup"` | `"destination"` | `null`
 
-### 3.3 타일(tiles 섹션) 추가 필드
+### 3.3 지형 블록(tiles 섹션) 추가 필드
 - `terrain_type`: 태그와 동일 값 (비용 프로파일 매핑용 명시)
 - `elevation`: 블록 윗면(로봇 주행면)의 y 높이 (경사/계단 판단용)
+
+### 3.4 영역 타일(overlay_tiles 섹션) 추가 필드
+- `covers_block_id`: 이 타일이 "어느 블록 위에 얹혀 있는가"를 가리키는 하부 블록의 고유 ID.
+  - 타일은 지형 블록 위에 얹혀 그 칸의 `cost_multiplier`를 덮어쓰는 영역 속성이다(설계상 해석 B).
+  - 예: `Crosswalk` 타일이 `Road_Vehicle` 블록을 덮으면, `covers_block_id`로 연결된 해당 차도 블록의 통행 억제 비용을 기본치(multiplier 1)로 해제한다.
+  - `Tile_Hazard` 타일도 동일하게 활성화 시 연결된 블록 위에서 비용을 높인다.
+  - 타일 아래에 지형 블록을 찾지 못한 경우(허공 타일 등) `null`이 된다.
 
 ## 4. 인접 관계 (adjacency 섹션)
 - 덤프 시점에 타일 간 인접 관계를 계산하여 기록한다. (A* 경로 탐색이 노드 간 엣지를 필요로 하므로, 덤프만으로 그래프 구조를 파악할 수 있어야 함)
@@ -39,9 +53,9 @@
   - `tolerance` 기본값: `0.1` (미터). 부동소수점 좌표 연산으로 인한 미세한 틈을 보정하기 위한 허용 오차.
   - 겹침(overlap) 판정 시에도 `tolerance`보다 큰 길이만큼 겹쳐야 인정하여, 단순히 모서리 끝부분만 미세하게 닿는 경우를 배제한다.
 - **권장 사항**: 맵 제작 시 타일을 격자(grid)에 스냅하여 배치하면 미세 틈 문제가 근본적으로 줄어든다.
-- 기록 형식: 각 타일의 인접 타일 목록
+- 기록 형식: 각 블록의 고유 ID와 인접한 블록 ID 리스트
   ```json
-  { "tile": "이름", "adjacent_to": ["이름1", "이름2"] }
+  { "id": "Flat_10_x1_z2_y5_r0", "adjacent_to": ["Flat_10_x2_z2_y5_r0", "Flat_10_x0_z2_y5_r0"] }
   ```
 
 ## 5. 저장 위치 / 파일명 / 실행 방식
