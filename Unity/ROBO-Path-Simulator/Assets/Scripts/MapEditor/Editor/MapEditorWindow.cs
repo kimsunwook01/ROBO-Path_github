@@ -51,7 +51,6 @@ namespace ROBOPath.MapEditor
                 }
             }
 
-            // Ensure new tags are active by default
             foreach (string t in allTags)
             {
                 if (!activeTagFilters.Contains(t))
@@ -60,12 +59,8 @@ namespace ROBOPath.MapEditor
                 }
             }
 
-            // Clean up old tags
             activeTagFilters.RemoveWhere(t => !allTags.Contains(t));
-            
-            // Sort by name
             loadedPrefabs.Sort((a, b) => a.name.CompareTo(b.name));
-            
             Repaint();
         }
 
@@ -84,7 +79,6 @@ namespace ROBOPath.MapEditor
             EditorGUILayout.Space();
             GUILayout.Label("Tag Filters", EditorStyles.boldLabel);
             
-            // Tag toggles
             GUILayout.BeginHorizontal();
             List<string> sortedTags = allTags.ToList();
             sortedTags.Sort();
@@ -102,7 +96,6 @@ namespace ROBOPath.MapEditor
 
             scrollPos = GUILayout.BeginScrollView(scrollPos);
             
-            // Draw grid of buttons
             int columns = Mathf.Max(1, (int)(position.width / 110f));
             int colIndex = 0;
             
@@ -143,7 +136,6 @@ namespace ROBOPath.MapEditor
                     }
                 }
                 
-                // Name label
                 GUILayout.Label(prefab.name, style, GUILayout.MaxWidth(100));
                 GUILayout.EndVertical();
                 
@@ -158,92 +150,116 @@ namespace ROBOPath.MapEditor
         {
             Event e = Event.current;
 
-            if (!isSelectMode)
+            // Problem 4: Escape to deselect
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
             {
-                // Prevent unity's default click-selection in Scene view while in Placement Mode
-                int controlID = GUIUtility.GetControlID(FocusType.Passive);
-                HandleUtility.AddDefaultControl(controlID);
+                selectedPrefab = null;
+                e.Use();
+                sceneView.Repaint();
             }
 
-            Plane plane = new Plane(Vector3.up, Vector3.zero);
-            Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
-            
-            if (!plane.Raycast(ray, out float enter)) return;
+            if (isSelectMode)
+            {
+                // Problem 5: Delete in Select Mode
+                if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace))
+                {
+                    if (Selection.activeGameObject != null && Selection.activeGameObject.transform.IsChildOf(GetOrCreateMapRoot()))
+                    {
+                        Undo.DestroyObjectImmediate(Selection.activeGameObject);
+                        e.Use();
+                    }
+                }
+                return; // Let Unity handle selection and camera logic
+            }
 
-            Vector3 hitPoint = ray.GetPoint(enter);
-            float gx = Mathf.Round(hitPoint.x / 10f) * 10f;
-            float gz = Mathf.Round(hitPoint.z / 10f) * 10f;
+            // Placement Mode
+            if (selectedPrefab == null) return;
+
+            // Prevent unity's default click-selection in Scene view while in Placement Mode
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+            HandleUtility.AddDefaultControl(controlID);
+
+            Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+            bool foundCell = false;
+            float cellX = 0, cellZ = 0;
+
+            // Problem 3: Physics Raycast for Face-based placement
+            if (Physics.Raycast(ray, out RaycastHit hit))
+            {
+                // Push slightly into the target cell using normal
+                Vector3 pointInCell = hit.point + hit.normal * 0.1f;
+                cellX = Mathf.Floor(pointInCell.x / 10f);
+                cellZ = Mathf.Floor(pointInCell.z / 10f);
+                foundCell = true;
+            }
+            else
+            {
+                Plane plane = new Plane(Vector3.up, Vector3.zero);
+                if (plane.Raycast(ray, out float enter))
+                {
+                    Vector3 hitPoint = ray.GetPoint(enter);
+                    cellX = Mathf.Floor(hitPoint.x / 10f);
+                    cellZ = Mathf.Floor(hitPoint.z / 10f);
+                    foundCell = true;
+                }
+            }
+
+            if (!foundCell) return;
+
+            // Problem 1: Grid centering
+            float centerX = cellX * 10f + 5f;
+            float centerZ = cellZ * 10f + 5f;
 
             Transform root = GetOrCreateMapRoot();
-            float topY = GetTopYAtGrid(root, gx, gz);
+            float topY = GetTopYAtGrid(root, centerX, centerZ);
+            float blockHeight = GetPreviewSize(selectedPrefab).y;
 
-            Vector3 placePos = new Vector3(gx, topY, gz);
+            // Problem 2: Center Y computation
+            Vector3 placePos = new Vector3(centerX, topY + blockHeight / 2f, centerZ);
 
-            if (!isSelectMode && selectedPrefab != null)
+            DrawPreviewHandle(placePos);
+
+            if (e.type == EventType.KeyDown && e.keyCode == KeyCode.R)
             {
-                DrawPreviewHandle(placePos);
-
-                if (e.type == EventType.KeyDown && e.keyCode == KeyCode.R)
-                {
-                    currentRotationIndex = (currentRotationIndex + 1) % 4;
-                    e.Use();
-                }
-
-                if (e.type == EventType.MouseDown && e.button == 0 && e.modifiers == EventModifiers.None)
-                {
-                    HandlePlacement(gx, gz, topY);
-                    e.Use();
-                }
-                else if (e.type == EventType.MouseDown && e.button == 1 && e.modifiers == EventModifiers.None)
-                {
-                    HandleDeletion(gx, gz);
-                    e.Use();
-                }
+                currentRotationIndex = (currentRotationIndex + 1) % 4;
+                e.Use();
             }
-            
-            // Force repaint scene to keep preview responsive to mouse move
+
+            if (e.type == EventType.MouseDown && e.button == 0 && e.modifiers == EventModifiers.None)
+            {
+                HandlePlacement(placePos);
+                e.Use();
+            }
+            // Problem 5: Right-click deletion removed, now handled by Unity default view logic
+
             sceneView.Repaint();
         }
 
         private void DrawPreviewHandle(Vector3 placePos)
         {
-            Vector3 size = new Vector3(10, 2, 10); // fallback size
-            var renderer = selectedPrefab.GetComponentInChildren<Renderer>();
-            if (renderer != null) size = renderer.bounds.size;
-
+            Vector3 size = GetPreviewSize(selectedPrefab);
             Handles.color = new Color(0f, 1f, 0f, 0.4f);
             
             Matrix4x4 oldMatrix = Handles.matrix;
             Handles.matrix = Matrix4x4.TRS(placePos, Quaternion.Euler(0, currentRotationIndex * 90f, 0), Vector3.one);
-            Handles.DrawWireCube(new Vector3(0, size.y / 2f, 0), size);
+            // Size is centered around 0,0,0 relative to placePos
+            Handles.DrawWireCube(Vector3.zero, size);
             Handles.matrix = oldMatrix;
         }
 
-        private void HandlePlacement(float gx, float gz, float topY)
+        private void HandlePlacement(Vector3 placePos)
         {
             if (selectedPrefab == null) return;
 
             Transform root = GetOrCreateMapRoot();
             GameObject newBlock = PrefabUtility.InstantiatePrefab(selectedPrefab) as GameObject;
-            
             if (newBlock == null) return;
 
             newBlock.transform.SetParent(root);
-            newBlock.transform.position = new Vector3(gx, topY, gz);
+            newBlock.transform.position = placePos;
             newBlock.transform.rotation = Quaternion.Euler(0, currentRotationIndex * 90f, 0);
 
             Undo.RegisterCreatedObjectUndo(newBlock, "Place Block");
-        }
-
-        private void HandleDeletion(float gx, float gz)
-        {
-            Transform root = GetOrCreateMapRoot();
-            GameObject highestBlock = GetHighestBlockAtGrid(root, gx, gz);
-
-            if (highestBlock != null)
-            {
-                Undo.DestroyObjectImmediate(highestBlock);
-            }
         }
 
         private Transform GetOrCreateMapRoot()
@@ -256,12 +272,18 @@ namespace ROBOPath.MapEditor
             return root.transform;
         }
 
-        private float GetTopYAtGrid(Transform root, float gx, float gz)
+        private float GetTopYAtGrid(Transform root, float cx, float cz)
         {
             float topY = 0f;
+            int targetCellX = Mathf.FloorToInt(cx / 10f);
+            int targetCellZ = Mathf.FloorToInt(cz / 10f);
+
             foreach (Transform child in root)
             {
-                if (Mathf.Approximately(child.position.x, gx) && Mathf.Approximately(child.position.z, gz))
+                int childCellX = Mathf.FloorToInt(child.position.x / 10f);
+                int childCellZ = Mathf.FloorToInt(child.position.z / 10f);
+
+                if (childCellX == targetCellX && childCellZ == targetCellZ)
                 {
                     float y = GetBlockTopY(child.gameObject);
                     if (y > topY) topY = y;
@@ -270,33 +292,35 @@ namespace ROBOPath.MapEditor
             return topY;
         }
 
-        private GameObject GetHighestBlockAtGrid(Transform root, float gx, float gz)
-        {
-            GameObject highest = null;
-            float topY = -1f;
-            foreach (Transform child in root)
-            {
-                if (Mathf.Approximately(child.position.x, gx) && Mathf.Approximately(child.position.z, gz))
-                {
-                    float y = GetBlockTopY(child.gameObject);
-                    if (y > topY)
-                    {
-                        topY = y;
-                        highest = child.gameObject;
-                    }
-                }
-            }
-            return highest;
-        }
-
         private float GetBlockTopY(GameObject go)
         {
             var renderer = go.GetComponentInChildren<Renderer>();
-            if (renderer != null)
+            if (renderer != null && renderer.bounds.size.sqrMagnitude > 0.01f)
             {
                 return renderer.bounds.max.y;
             }
-            return go.transform.position.y;
+            return go.transform.position.y + GetPrefabHeight(go) / 2f;
+        }
+
+        // Problem 6: Fallback for missing bounds in ProBuilder blocks
+        private Vector3 GetPreviewSize(GameObject prefab)
+        {
+            var renderer = prefab.GetComponentInChildren<Renderer>();
+            if (renderer != null && renderer.bounds.size.sqrMagnitude > 0.01f)
+            {
+                return renderer.bounds.size;
+            }
+            return new Vector3(10f, GetPrefabHeight(prefab), 10f);
+        }
+
+        private float GetPrefabHeight(GameObject prefab)
+        {
+            string[] parts = prefab.name.Split('_');
+            if (parts.Length > 0 && float.TryParse(parts[parts.Length - 1], out float h))
+            {
+                return h;
+            }
+            return 2f; // Fallback
         }
     }
 }
