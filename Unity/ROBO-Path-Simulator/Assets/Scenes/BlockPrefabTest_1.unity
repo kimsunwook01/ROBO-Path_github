@@ -2014,7 +2014,7 @@ GameObject:
   - component: {fileID: 422880710}
   m_Layer: 0
   m_Name: Road_Vehicle_Ramp_4
-  m_TagString: Untagged
+  m_TagString: Road_Vehicle_Ramp
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2333,7 +2333,7 @@ GameObject:
   - component: {fileID: 538882373}
   m_Layer: 0
   m_Name: Road_Vehicle_Ramp_8
-  m_TagString: Untagged
+  m_TagString: Road_Vehicle_Ramp
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3551,7 +3551,7 @@ GameObject:
   - component: {fileID: 800185518}
   m_Layer: 0
   m_Name: Road_Vehicle_Ramp_6
-  m_TagString: Untagged
+  m_TagString: Road_Vehicle_Ramp
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4301,7 +4301,7 @@ GameObject:
   - component: {fileID: 931134468}
   m_Layer: 0
   m_Name: Road_Vehicle_Ramp_2
-  m_TagString: Untagged
+  m_TagString: Road_Vehicle_Ramp
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -8365,7 +8365,7 @@ GameObject:
   - component: {fileID: 1835502673}
   m_Layer: 0
   m_Name: Road_Vehicle_Ramp_10
-  m_TagString: Untagged
+  m_TagString: Road_Vehicle_Ramp
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
