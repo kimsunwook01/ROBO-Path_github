@@ -21,22 +21,20 @@ def calculate_edge_cost(distance_m: float, stats: Optional[PlatformStat], weight
     
     if not stats or stats.traversal_count == 0:
         # 주행 데이터가 없는 엣지의 경우 순수 물리적 거리에 억제 계수를 반영하여 산출
-        return distance_m * cost_multiplier
+        cost = distance_m * cost_multiplier
+    else:
+        l = stats.average_load_factor
+        s = stats.average_stability
+        e = stats.average_efficiency
         
-    l = stats.average_load_factor
-    s = stats.average_stability
-    e = stats.average_efficiency
+        # 안정성과 효율성은 1에 가까울수록 좋은 수치이므로 (1 - 값)을 통해 페널티로 역산
+        penalty = (w_l * l) + (w_s * (1.0 - s)) + (w_e * (1.0 - e))
+        
+        # 거리에 억제 계수와 (1 + 페널티)를 곱하여 최종 비용을 산출
+        cost = distance_m * cost_multiplier * (1.0 + penalty)
     
-    # 안정성과 효율성은 1에 가까울수록 좋은 수치이므로 (1 - 값)을 통해 페널티로 역산
-    penalty = (w_l * l) + (w_s * (1.0 - s)) + (w_e * (1.0 - e))
-    
-    # 거리에 억제 계수와 (1 + 페널티)를 곱하여 최종 비용을 산출
-    cost = distance_m * cost_multiplier * (1.0 + penalty)
-    
-    # A* Admissibility (최적성) 보장을 위한 하한 안전판: 실제 물리적 거리보다 작아지지 않게 방어
-    cost = max(distance_m, cost)
-    
-    return cost
+    # A* Admissibility (최적성) 보장을 위한 하한 안전판: 최종 비용이 물리 거리보다 작아지지 않게 단일 지점에서 방어
+    return max(distance_m, cost)
 
 def resolve_cost_multiplier(terrain_tag: Optional[str], tile_tags: Optional[Union[str, Iterable[str]]], platform_profile: dict) -> float:
     """

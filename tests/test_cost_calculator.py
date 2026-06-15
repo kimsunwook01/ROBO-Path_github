@@ -76,3 +76,16 @@ def test_admissibility_safety_net():
     # max(distance, cost) 방어 로직에 의해 최소 distance여야 함
     assert cost >= distance
     assert cost == distance
+
+def test_admissibility_safety_net_no_stats():
+    """stats가 없는 미주행 엣지에 대해 cost_multiplier가 1.0 미만일 때 
+    단일 출구의 클램프가 작동하여 distance_m 미만으로 떨어지지 않는지 검증"""
+    distance = 10.0
+    weight_profile = {"W_L": 1.0, "W_S": 1.0, "W_E": 1.0}
+    
+    # 조기 반환 대상(stats=None)이지만 cost_multiplier 때문에 거리보다 비용이 싸지는 상황
+    cost = calculate_edge_cost(distance, None, weight_profile, cost_multiplier=0.5)
+    
+    # distance * 0.5 < distance 가 되지만,
+    # max(distance, cost) 방어 로직에 의해 최소 distance여야 함
+    assert cost == distance

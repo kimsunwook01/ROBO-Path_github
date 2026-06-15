@@ -36,7 +36,7 @@ def build_graph(nodes: List[Node], edges: List[Edge], robot: Robot) -> Dict[UUID
         else:
             stats = raw_stats
         
-        # 비용 산출
+        # TODO: 향후 resolve_cost_multiplier를 연동하여 타일/지형별 cost_multiplier를 calculate_edge_cost에 주입해야 함
         cost = calculate_edge_cost(edge.distance_m, stats, weights)
         
         # 양방향 주행 가능 그래프로 구성
