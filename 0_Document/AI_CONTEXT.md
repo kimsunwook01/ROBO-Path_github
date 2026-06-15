@@ -89,10 +89,13 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
   - [x] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
 - [ ] **7. Unity 시뮬레이터 연동 및 구축 (`Unity/`)**
   - [x] [Phase 1] Unity 프로젝트 생성 및 GitHub 연동 (.gitignore 설정)
-  - [ ] [Phase 2] 500m x 500m 가상 캠퍼스 맵 제작 (Terrain + ProBuilder) 및 NavMesh 베이크
-    - [x] 맵 설계 명세 추가 및 공유 파라미터 파일 작성
-    - [x] 씬 덤프 도구 명세 작성
+  - [x] [Phase 2] 메인 캠퍼스 맵 제작 및 파이프라인 구축 완료
+    - [x] 블록 프리팹 25종(평지/경사/계단/차도/차도경사 × 높이 5) 및 타일 5종(거점3/횡단보도/장애물) 제작 완료
+    - [x] 맵 에디터 도구 구현 및 검증 완료 (격자 배치/적층/회전/삭제/선택, 동적 팔레트)
+    - [x] 대규모 메인 맵 제작 완료 (약 3162블록 규모, 88m 고저차, 거점/타일 배치, NavMesh 베이크 완료)
+    - [x] 씬 덤프 개편 완료 (고유 ID 체계 도입, overlay_tiles 섹션 분리, covers_block_id 매핑) - A* 그래프 변환용 고품질 데이터 확보
   - [ ] [Phase 3] 로봇 2종(Wheeled/Legged) 구현 (NavMesh + Raycast + 피드백 계산 로직)
+    - (향후 과제) 백엔드 그래프 연결 (덤프 맵 데이터 → DB `map_edges` 및 Graph 객체 변환)
   - [ ] [Phase 4] Unity 내장 WebSocket 서버(`WebSocketServer.cs`) 및 C# Python 브릿지(Supabase 적재) 로직 작성
   - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**

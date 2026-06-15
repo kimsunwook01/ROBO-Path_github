@@ -29,7 +29,7 @@
 - 바닥은 단일 Unity Terrain을 사용하지 않고, **개별 메쉬 조각(블록)의 집합**으로 구성한다.
 - **용어 정의:**
   - **블록(Block):** 바닥을 이루는 물리적 지형 단위(평지/경사/계단 등). 로봇이 그 윗면 위를 주행한다.
-  - **타일(Tile):** 블록 위에 얹는 논리적/이벤트 영역(거점 등). 타일은 footprint 10×10, 높이 0.5의 얇은 물리 블록 형태(콜라이더 있음)로 제작된다. 평지/도로 평면 블록 위에만 배치하며, 0.5 단차는 NavMesh가 통행 가능하게 덮는다. 반투명 + 종류별 형광색으로 표시한다.
+  - **타일(Tile):** 블록 위에 얹는 논리적/이벤트 영역. 현재 확정된 타일은 총 5종이다 (거점 3종: `Node_Station`, `Node_Pickup`, `Node_Destination` / 횡단보도: `Crosswalk` / 장애물: `Tile_Hazard`). 타일은 footprint 10×10, 높이 0.5의 얇은 물리 블록 형태(콜라이더 있음)로 제작된다. 평지/도로 평면 블록 위에만 배치하며, 0.5 단차는 NavMesh가 통행 가능하게 덮는다. 반투명 + 종류별 형광색으로 표시한다.
   - (본 문서 및 프로젝트 전반에서 영역 구분을 위해 종종 '타일'과 '블록'이 혼용될 수 있으나, 물리적 지형 단위는 블록, 그 위를 덮는 이벤트나 의미적 영역은 타일로 규정한다.)
 - **블록 규격:**
   - 기본 블록 크기: `10m × 10m × 10m` 정육면체. footprint(바닥 면적)는 항상 `10×10`으로 고정하여 타일 간 인접 판정의 일관성을 보장한다.
@@ -191,7 +191,7 @@ Cost = distance_m × cost_multiplier × (1 + W_L×L + W_S×(1−S) + W_E×(1−E
 
 ## 8. 백엔드 데이터 모델 연결 요약
 
-- 거점 3종 + Waypoint → `nodes`(node_type='BASE') + `base_locations`(location_usage로 구분). 스키마 변경 불필요.
+- 거점 3종(Node_Station/Node_Pickup/Node_Destination) → `nodes`(node_type='BASE') + `base_locations`(location_usage로 구분). 스키마 변경 불필요.
 - 각 타일의 태그 → 해당 타일이 형성하는 엣지의 비용 프로파일 결정 → 주행 시 `map_edges`의 platform_stats(L/S/E)로 누적.
 - 로봇이 자율 발견한 노드 → `discovered_nodes`(기존 구조 유지).
 
