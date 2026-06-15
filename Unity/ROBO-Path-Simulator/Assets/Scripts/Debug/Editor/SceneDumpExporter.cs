@@ -19,7 +19,7 @@ namespace ROBOPath.Debug.Editor
             
             // All tags to collect
             string[] nodeTags = { "Node_Station", "Node_Pickup", "Node_Destination", "Waypoint" };
-            string[] tileTags = { "Terrain_Flat", "Terrain_Slope", "Path_Stair", "Path_Ramp", "Path_Tunnel", "Road_Sidewalk", "Road_Vehicle", "Road_Crosswalk" };
+            string[] tileTags = { "Terrain_Flat", "Terrain_Slope", "Path_Stair", "Path_Ramp", "Path_Tunnel", "Road_Vehicle", "Road_Vehicle_Ramp" };
             string[] obstacleTags = { "Building", "Obstacle", "Prop_Pole", "Prop_Tree" };
 
             var dump = new SceneDumpData();
