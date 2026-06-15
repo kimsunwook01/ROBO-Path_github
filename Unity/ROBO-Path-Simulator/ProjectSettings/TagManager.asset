@@ -13,7 +13,7 @@ TagManager:
   - Path_Stair
   - Path_Ramp
   - Path_Tunnel
-  - Road_Sidewalk
+  - Road_Vehicle_Ramp
   - Road_Vehicle
   - Road_Crosswalk
   - Building

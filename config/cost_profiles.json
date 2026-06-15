@@ -12,7 +12,7 @@
         "Terrain_Slope": { "L": 0.50, "S": 0.60, "E": 0.50, "traversable": true, "cost_multiplier": 1 },
         "Path_Ramp": { "L": 0.35, "S": 0.75, "E": 0.65, "traversable": true, "cost_multiplier": 1 },
         "Path_Stair": { "L": null, "S": null, "E": null, "traversable": false, "cost_multiplier": 1 },
-        "Road_Sidewalk": { "L": 0.15, "S": 0.90, "E": 0.90, "traversable": true, "cost_multiplier": 1 },
+        "Road_Vehicle_Ramp": { "L": 0.35, "S": 0.75, "E": 0.65, "traversable": true, "cost_multiplier": 20 },
         "Road_Vehicle": { "L": 0.30, "S": 0.40, "E": 0.85, "traversable": true, "cost_multiplier": 20 },
         "Path_Tunnel": { "L": 0.20, "S": 0.85, "E": 0.85, "traversable": true, "cost_multiplier": 1 }
       },
@@ -31,7 +31,7 @@
         "Terrain_Slope": { "L": 0.40, "S": 0.75, "E": 0.60, "traversable": true, "cost_multiplier": 1 },
         "Path_Ramp": { "L": 0.35, "S": 0.80, "E": 0.60, "traversable": true, "cost_multiplier": 1 },
         "Path_Stair": { "L": 0.45, "S": 0.70, "E": 0.65, "traversable": true, "cost_multiplier": 1 },
-        "Road_Sidewalk": { "L": 0.20, "S": 0.90, "E": 0.70, "traversable": true, "cost_multiplier": 1 },
+        "Road_Vehicle_Ramp": { "L": 0.35, "S": 0.80, "E": 0.60, "traversable": true, "cost_multiplier": 3 },
         "Road_Vehicle": { "L": 0.35, "S": 0.50, "E": 0.75, "traversable": true, "cost_multiplier": 3 },
         "Path_Tunnel": { "L": 0.25, "S": 0.85, "E": 0.65, "traversable": true, "cost_multiplier": 1 }
       },
