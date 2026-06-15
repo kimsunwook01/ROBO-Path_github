@@ -1,55 +1,72 @@
 {
     "summary": {
         "total_nodes": 0,
-        "total_tiles": 3,
+        "total_tiles": 9,
         "total_obstacles": 0,
-        "min_elevation": 0.0,
+        "min_elevation": 2.0,
         "max_elevation": 2.0,
         "map_size": {
             "x": 30.0,
-            "y": 12.0,
-            "z": 10.0
+            "y": 2.0,
+            "z": 30.0
         }
     },
     "nodes": [],
     "tiles": [
         {
-            "name": "Flat_Low",
+            "name": "Flat_2",
             "tag": "Terrain_Flat",
             "position": {
                 "x": 0.0,
-                "y": -5.0,
-                "z": 0.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
+                "y": 1.0,
                 "z": 10.0
             },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 0.0
-        },
-        {
-            "name": "Flat_High",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": 20.0,
-                "y": -3.0,
-                "z": 0.0
-            },
             "rotation_y": 0.0,
             "size": {
                 "x": 10.0,
-                "y": 10.0,
+                "y": 2.0,
                 "z": 10.0
             },
             "terrain_type": "Terrain_Flat",
             "elevation": 2.0
         },
         {
-            "name": "Prism",
-            "tag": "Path_Ramp",
+            "name": "Flat_2 (2)",
+            "tag": "Terrain_Flat",
+            "position": {
+                "x": 10.0,
+                "y": 1.0,
+                "z": 10.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Terrain_Flat",
+            "elevation": 2.0
+        },
+        {
+            "name": "Flat_2 (4)",
+            "tag": "Terrain_Flat",
+            "position": {
+                "x": 20.0,
+                "y": 1.0,
+                "z": 20.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Terrain_Flat",
+            "elevation": 2.0
+        },
+        {
+            "name": "Flat_2 (3)",
+            "tag": "Terrain_Flat",
             "position": {
                 "x": 10.0,
                 "y": 1.0,
@@ -61,29 +78,164 @@
                 "y": 2.0,
                 "z": 10.0
             },
+            "terrain_type": "Terrain_Flat",
+            "elevation": 2.0
+        },
+        {
+            "name": "Flat_2 (1)",
+            "tag": "Terrain_Flat",
+            "position": {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 20.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Terrain_Flat",
+            "elevation": 2.0
+        },
+        {
+            "name": "Road_Vehicle_2",
+            "tag": "Road_Vehicle",
+            "position": {
+                "x": 20.0,
+                "y": 1.0,
+                "z": 10.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Road_Vehicle",
+            "elevation": 2.0
+        },
+        {
+            "name": "Road_Vehicle_Ramp_2",
+            "tag": "Road_Vehicle_Ramp",
+            "position": {
+                "x": 20.0,
+                "y": 1.0,
+                "z": 0.0
+            },
+            "rotation_y": 270.0,
+            "size": {
+                "x": 10.000001907348633,
+                "y": 2.0,
+                "z": 10.000001907348633
+            },
+            "terrain_type": "Road_Vehicle_Ramp",
+            "elevation": 2.0
+        },
+        {
+            "name": "Ramp_2",
+            "tag": "Path_Ramp",
+            "position": {
+                "x": 10.0,
+                "y": 1.0,
+                "z": 20.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
             "terrain_type": "Path_Ramp",
+            "elevation": 2.0
+        },
+        {
+            "name": "Stair_2",
+            "tag": "Path_Stair",
+            "position": {
+                "x": 0.0,
+                "y": 1.0,
+                "z": 0.0
+            },
+            "rotation_y": 0.0,
+            "size": {
+                "x": 10.0,
+                "y": 2.0,
+                "z": 10.0
+            },
+            "terrain_type": "Path_Stair",
             "elevation": 2.0
         }
     ],
     "obstacles": [],
     "adjacency": [
         {
-            "tile": "Flat_Low",
+            "tile": "Flat_2",
             "adjacent_to": [
-                "Prism"
+                "Flat_2 (2)",
+                "Flat_2 (1)",
+                "Stair_2"
             ]
         },
         {
-            "tile": "Flat_High",
+            "tile": "Flat_2 (2)",
             "adjacent_to": [
-                "Prism"
+                "Flat_2",
+                "Flat_2 (3)",
+                "Road_Vehicle_2",
+                "Ramp_2"
             ]
         },
         {
-            "tile": "Prism",
+            "tile": "Flat_2 (4)",
             "adjacent_to": [
-                "Flat_Low",
-                "Flat_High"
+                "Road_Vehicle_2",
+                "Ramp_2"
+            ]
+        },
+        {
+            "tile": "Flat_2 (3)",
+            "adjacent_to": [
+                "Flat_2 (2)",
+                "Road_Vehicle_Ramp_2",
+                "Stair_2"
+            ]
+        },
+        {
+            "tile": "Flat_2 (1)",
+            "adjacent_to": [
+                "Flat_2",
+                "Ramp_2"
+            ]
+        },
+        {
+            "tile": "Road_Vehicle_2",
+            "adjacent_to": [
+                "Flat_2 (2)",
+                "Flat_2 (4)",
+                "Road_Vehicle_Ramp_2"
+            ]
+        },
+        {
+            "tile": "Road_Vehicle_Ramp_2",
+            "adjacent_to": [
+                "Flat_2 (3)",
+                "Road_Vehicle_2"
+            ]
+        },
+        {
+            "tile": "Ramp_2",
+            "adjacent_to": [
+                "Flat_2 (2)",
+                "Flat_2 (4)",
+                "Flat_2 (1)"
+            ]
+        },
+        {
+            "tile": "Stair_2",
+            "adjacent_to": [
+                "Flat_2",
+                "Flat_2 (3)"
             ]
         }
     ]
