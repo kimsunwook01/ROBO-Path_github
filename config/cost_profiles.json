@@ -17,7 +17,8 @@
         "Path_Tunnel": { "L": 0.20, "S": 0.85, "E": 0.85, "traversable": true, "cost_multiplier": 1 }
       },
       "tiles": {
-        "Crosswalk": { "cost_multiplier": 1 }
+        "Crosswalk": { "cost_multiplier": 1 },
+        "Tile_Hazard": { "cost_multiplier": 50 }
       }
     },
     "legged": {
@@ -36,7 +37,8 @@
         "Path_Tunnel": { "L": 0.25, "S": 0.85, "E": 0.65, "traversable": true, "cost_multiplier": 1 }
       },
       "tiles": {
-        "Crosswalk": { "cost_multiplier": 1 }
+        "Crosswalk": { "cost_multiplier": 1 },
+        "Tile_Hazard": { "cost_multiplier": 50 }
       }
     }
   }

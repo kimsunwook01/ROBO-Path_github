@@ -7,7 +7,6 @@ TagManager:
   - Node_Station
   - Node_Pickup
   - Node_Destination
-  - Waypoint
   - Terrain_Flat
   - Terrain_Slope
   - Path_Stair
@@ -15,7 +14,8 @@ TagManager:
   - Path_Tunnel
   - Road_Vehicle_Ramp
   - Road_Vehicle
-  - Road_Crosswalk
+  - Crosswalk
+  - Tile_Hazard
   - Building
   - Obstacle
   - Prop_Pole

@@ -29,7 +29,7 @@
 - 바닥은 단일 Unity Terrain을 사용하지 않고, **개별 메쉬 조각(블록)의 집합**으로 구성한다.
 - **용어 정의:**
   - **블록(Block):** 바닥을 이루는 물리적 지형 단위(평지/경사/계단 등). 로봇이 그 윗면 위를 주행한다.
-  - **타일(Tile):** 블록 위에 얹는 논리적/이벤트 영역(거점 등).
+  - **타일(Tile):** 블록 위에 얹는 논리적/이벤트 영역(거점 등). 타일은 footprint 10×10, 높이 0.5의 얇은 물리 블록 형태(콜라이더 있음)로 제작된다. 평지/도로 평면 블록 위에만 배치하며, 0.5 단차는 NavMesh가 통행 가능하게 덮는다. 반투명 + 종류별 형광색으로 표시한다.
   - (본 문서 및 프로젝트 전반에서 영역 구분을 위해 종종 '타일'과 '블록'이 혼용될 수 있으나, 물리적 지형 단위는 블록, 그 위를 덮는 이벤트나 의미적 영역은 타일로 규정한다.)
 - **블록 규격:**
   - 기본 블록 크기: `10m × 10m × 10m` 정육면체. footprint(바닥 면적)는 항상 `10×10`으로 고정하여 타일 간 인접 판정의 일관성을 보장한다.
@@ -54,10 +54,9 @@
 ### 3.1 거점 계열 (Node)
 | 태그 | 역할 | DB 매핑 |
 |---|---|---|
-| `Node_Station` | 충전 스테이션. 모든 임무의 시작·종료. 보통 1개 | base_locations, location_usage='station' |
-| `Node_Pickup` | 카페/픽업 지점. 배달 임무만 경유. 1개 이상 | base_locations, location_usage='pickup' |
-| `Node_Destination` | 배달 목적지. 사전 배치, 다수 존재 | base_locations, location_usage='destination' |
-| `Waypoint` | 순수 경로 노드(거점 아님). 교차로·갈림길 | nodes (node_type='BASE'), base_locations 미등록 또는 usage=null |
+| `Node_Station` | 충전 스테이션 타일. 모든 임무의 시작·종료. 보통 1개 | base_locations, location_usage='station' |
+| `Node_Pickup` | 카페/픽업 지점 타일. 배달 임무만 경유. 1개 이상 | base_locations, location_usage='pickup' |
+| `Node_Destination` | 배달 목적지 타일. 사전 배치, 다수 존재 | base_locations, location_usage='destination' |
 
 > 거점 3종은 모두 사람이 정의한 고신뢰 노드이므로 `nodes.node_type = 'BASE'`에 해당하며, `base_locations.location_usage` 필드로 station/pickup/destination을 구분한다. **기존 스키마 변경이 불필요하다.**
 
@@ -79,15 +78,16 @@
 |---|---|
 | `Road_Vehicle` | 차도. 고비용 회피 대상. 인도와 경계에 단차 없음 |
 | `Road_Vehicle_Ramp` | 차도 경사(차도이면서 경사인 블록) |
-| `Crosswalk (타일)` | 횡단보도. 차도 블록 위에 얹히는 타일 형태 |
+| `Crosswalk` | 횡단보도 타일. 차도 블록 위에 얹히는 타일 형태 |
 
-### 3.5 장애물 계열 (Obstacle/Prop)
+### 3.5 장애물/특수 타일 계열 (Obstacle/Prop/Tile)
 | 태그 | 설명 |
 |---|---|
 | `Building` | 건물 외관. 통행 불가(NavMesh 제외) |
 | `Obstacle` | 벽·구조물 등 기타 장애물 |
 | `Prop_Pole` | 가로등·전봇대·표지판 기둥. 가는 수직 장애물. Raycast 탐색에 걸림 |
 | `Prop_Tree` | 나무. 수관 때문에 부피가 더 큼 |
+| `Tile_Hazard` | 맵에 미리 설치하는 동적 장애물 타일. 시뮬레이션 중 확률적으로 일정 시간 활성화되며, 활성 시 해당 칸의 비용이 매우 높아짐(물 웅덩이, 인파 등 돌발상황). 로봇이 발견 시 서버에 보고하여 다른 로봇이 회피하게 함. 동적 활성화 로직은 향후 구현 예정. |
 
 ---
 
