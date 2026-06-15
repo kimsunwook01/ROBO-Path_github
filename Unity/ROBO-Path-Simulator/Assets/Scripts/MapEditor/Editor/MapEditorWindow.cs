@@ -150,7 +150,6 @@ namespace ROBOPath.MapEditor
         {
             Event e = Event.current;
 
-            // Problem 4: Escape to deselect
             if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Escape)
             {
                 selectedPrefab = null;
@@ -160,13 +159,24 @@ namespace ROBOPath.MapEditor
 
             if (isSelectMode)
             {
-                // Problem 5: Delete in Select Mode
-                if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace))
+                if (e.type == EventType.KeyDown)
                 {
-                    if (Selection.activeGameObject != null && Selection.activeGameObject.transform.IsChildOf(GetOrCreateMapRoot()))
+                    if (e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace)
                     {
-                        Undo.DestroyObjectImmediate(Selection.activeGameObject);
-                        e.Use();
+                        if (Selection.activeGameObject != null && Selection.activeGameObject.transform.IsChildOf(GetOrCreateMapRoot()))
+                        {
+                            Undo.DestroyObjectImmediate(Selection.activeGameObject);
+                            e.Use();
+                        }
+                    }
+                    else if (e.keyCode == KeyCode.R)
+                    {
+                        if (Selection.activeGameObject != null && Selection.activeGameObject.transform.IsChildOf(GetOrCreateMapRoot()))
+                        {
+                            Undo.RecordObject(Selection.activeGameObject.transform, "Rotate Block");
+                            Selection.activeGameObject.transform.Rotate(0, 90f, 0, Space.World);
+                            e.Use();
+                        }
                     }
                 }
                 return; // Let Unity handle selection and camera logic
@@ -182,14 +192,40 @@ namespace ROBOPath.MapEditor
             Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
             bool foundCell = false;
             float cellX = 0, cellZ = 0;
+            float baseY = 0f;
+            float blockHeight = GetPreviewSize(selectedPrefab).y;
 
-            // Problem 3: Physics Raycast for Face-based placement
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if (Physics.Raycast(ray, out RaycastHit hit) && hit.collider.transform.IsChildOf(GetOrCreateMapRoot()))
             {
-                // Push slightly into the target cell using normal
-                Vector3 pointInCell = hit.point + hit.normal * 0.1f;
-                cellX = Mathf.Floor(pointInCell.x / 10f);
-                cellZ = Mathf.Floor(pointInCell.z / 10f);
+                GameObject hitObj = hit.collider.gameObject;
+                Renderer hitRenderer = hitObj.GetComponentInChildren<Renderer>();
+                
+                float hitMaxY = hitRenderer != null ? hitRenderer.bounds.max.y : hitObj.transform.position.y + GetPrefabHeight(hitObj) / 2f;
+                float hitMinY = hitRenderer != null ? hitRenderer.bounds.min.y : hitObj.transform.position.y - GetPrefabHeight(hitObj) / 2f;
+                
+                Vector3 hitPointCell = hitObj.transform.position;
+
+                if (hit.normal.y > 0.5f)
+                {
+                    // Top face
+                    cellX = Mathf.Floor(hitPointCell.x / 10f);
+                    cellZ = Mathf.Floor(hitPointCell.z / 10f);
+                    baseY = hitMaxY;
+                }
+                else if (hit.normal.y < -0.5f)
+                {
+                    // Bottom face
+                    cellX = Mathf.Floor(hitPointCell.x / 10f);
+                    cellZ = Mathf.Floor(hitPointCell.z / 10f);
+                    baseY = hitMinY - blockHeight;
+                }
+                else
+                {
+                    // Side face
+                    cellX = Mathf.Floor(hitPointCell.x / 10f) + Mathf.Round(hit.normal.x);
+                    cellZ = Mathf.Floor(hitPointCell.z / 10f) + Mathf.Round(hit.normal.z);
+                    baseY = hitMinY;
+                }
                 foundCell = true;
             }
             else
@@ -200,22 +236,16 @@ namespace ROBOPath.MapEditor
                     Vector3 hitPoint = ray.GetPoint(enter);
                     cellX = Mathf.Floor(hitPoint.x / 10f);
                     cellZ = Mathf.Floor(hitPoint.z / 10f);
+                    baseY = 0f;
                     foundCell = true;
                 }
             }
 
             if (!foundCell) return;
 
-            // Problem 1: Grid centering
             float centerX = cellX * 10f + 5f;
             float centerZ = cellZ * 10f + 5f;
-
-            Transform root = GetOrCreateMapRoot();
-            float topY = GetTopYAtGrid(root, centerX, centerZ);
-            float blockHeight = GetPreviewSize(selectedPrefab).y;
-
-            // Problem 2: Center Y computation
-            Vector3 placePos = new Vector3(centerX, topY + blockHeight / 2f, centerZ);
+            Vector3 placePos = new Vector3(centerX, baseY + blockHeight / 2f, centerZ);
 
             DrawPreviewHandle(placePos);
 
@@ -230,7 +260,6 @@ namespace ROBOPath.MapEditor
                 HandlePlacement(placePos);
                 e.Use();
             }
-            // Problem 5: Right-click deletion removed, now handled by Unity default view logic
 
             sceneView.Repaint();
         }
@@ -242,7 +271,6 @@ namespace ROBOPath.MapEditor
             
             Matrix4x4 oldMatrix = Handles.matrix;
             Handles.matrix = Matrix4x4.TRS(placePos, Quaternion.Euler(0, currentRotationIndex * 90f, 0), Vector3.one);
-            // Size is centered around 0,0,0 relative to placePos
             Handles.DrawWireCube(Vector3.zero, size);
             Handles.matrix = oldMatrix;
         }
@@ -272,37 +300,6 @@ namespace ROBOPath.MapEditor
             return root.transform;
         }
 
-        private float GetTopYAtGrid(Transform root, float cx, float cz)
-        {
-            float topY = 0f;
-            int targetCellX = Mathf.FloorToInt(cx / 10f);
-            int targetCellZ = Mathf.FloorToInt(cz / 10f);
-
-            foreach (Transform child in root)
-            {
-                int childCellX = Mathf.FloorToInt(child.position.x / 10f);
-                int childCellZ = Mathf.FloorToInt(child.position.z / 10f);
-
-                if (childCellX == targetCellX && childCellZ == targetCellZ)
-                {
-                    float y = GetBlockTopY(child.gameObject);
-                    if (y > topY) topY = y;
-                }
-            }
-            return topY;
-        }
-
-        private float GetBlockTopY(GameObject go)
-        {
-            var renderer = go.GetComponentInChildren<Renderer>();
-            if (renderer != null && renderer.bounds.size.sqrMagnitude > 0.01f)
-            {
-                return renderer.bounds.max.y;
-            }
-            return go.transform.position.y + GetPrefabHeight(go) / 2f;
-        }
-
-        // Problem 6: Fallback for missing bounds in ProBuilder blocks
         private Vector3 GetPreviewSize(GameObject prefab)
         {
             var renderer = prefab.GetComponentInChildren<Renderer>();
