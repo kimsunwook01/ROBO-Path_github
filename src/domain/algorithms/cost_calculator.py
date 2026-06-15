@@ -33,6 +33,9 @@ def calculate_edge_cost(distance_m: float, stats: Optional[PlatformStat], weight
     # 거리에 억제 계수와 (1 + 페널티)를 곱하여 최종 비용을 산출
     cost = distance_m * cost_multiplier * (1.0 + penalty)
     
+    # A* Admissibility (최적성) 보장을 위한 하한 안전판: 실제 물리적 거리보다 작아지지 않게 방어
+    cost = max(distance_m, cost)
+    
     return cost
 
 def resolve_cost_multiplier(terrain_tag: Optional[str], tile_tags: Optional[Union[str, Iterable[str]]], platform_profile: dict) -> float:

@@ -59,3 +59,20 @@ def test_weight_profile_impact():
     load_insensitive_cost = calculate_edge_cost(distance, stats, load_insensitive_profile)
     
     assert load_sensitive_cost > load_insensitive_cost
+
+def test_admissibility_safety_net():
+    """A* 휴리스틱의 Admissibility 보장을 위해 cost_multiplier나 효율성이 극단적일 때 
+    최종 비용이 distance_m 미만으로 떨어지지 않는지 검증"""
+    distance = 10.0
+    weight_profile = {"W_L": 1.0, "W_S": 1.0, "W_E": 1.0}
+    
+    # 극단적으로 빠른 내리막 (효율성 3.0 -> penalty는 음수가 됨)
+    # cost_multiplier도 0.5 (1.0 미만)으로 설정
+    stats = PlatformStat(average_load_factor=0.0, average_stability=1.0, average_efficiency=3.0, traversal_count=1)
+    
+    cost = calculate_edge_cost(distance, stats, weight_profile, cost_multiplier=0.5)
+    
+    # distance * multiplier * (1 + penalty) < distance 가 되지만,
+    # max(distance, cost) 방어 로직에 의해 최소 distance여야 함
+    assert cost >= distance
+    assert cost == distance
