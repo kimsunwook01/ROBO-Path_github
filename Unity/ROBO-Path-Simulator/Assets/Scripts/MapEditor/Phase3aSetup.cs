@@ -10,13 +10,8 @@ public class Phase3aSetup
     public static void RunSetup()
     {
         AddLayer("Robot");
-        AddNavMeshArea("Road", 1);
-        AddNavMeshArea("Stair", 1);
-        
         SetupPrefab("Assets/Prefabs/Robot/Robot_Wheeled.prefab", RobotPlatform.Wheeled);
         SetupPrefab("Assets/Prefabs/Robot/Robot_Legged.prefab", RobotPlatform.Legged);
-        
-        RebakeMainScene();
         
         Debug.Log("Phase 3a Setup Completed!");
     }
@@ -50,40 +45,6 @@ public class Phase3aSetup
                     break;
                 }
             }
-        }
-    }
-
-    private static void AddNavMeshArea(string areaName, int cost)
-    {
-        // For Unity, NavMesh areas are stored in NavMeshAreas.asset or NavMeshProjectSettings
-        SerializedObject navMeshSettings = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset")[0]);
-        SerializedProperty areas = navMeshSettings.FindProperty("areas");
-
-        bool found = false;
-        int emptyIndex = -1;
-
-        for (int i = 3; i < areas.arraySize; i++) // 0,1,2 are built-in
-        {
-            SerializedProperty area = areas.GetArrayElementAtIndex(i);
-            SerializedProperty nameProp = area.FindPropertyRelative("name");
-            if (nameProp.stringValue == areaName)
-            {
-                found = true;
-                break;
-            }
-            if (emptyIndex == -1 && string.IsNullOrEmpty(nameProp.stringValue))
-            {
-                emptyIndex = i;
-            }
-        }
-
-        if (!found && emptyIndex != -1)
-        {
-            SerializedProperty area = areas.GetArrayElementAtIndex(emptyIndex);
-            area.FindPropertyRelative("name").stringValue = areaName;
-            area.FindPropertyRelative("cost").floatValue = cost;
-            navMeshSettings.ApplyModifiedProperties();
-            Debug.Log($"NavMesh Area '{areaName}' added.");
         }
     }
 
@@ -121,7 +82,7 @@ public class Phase3aSetup
         // 4. NavMeshAgent
         NavMeshAgent agent = instance.GetComponent<NavMeshAgent>();
         if (agent == null) agent = instance.AddComponent<NavMeshAgent>();
-        agent.radius = 2.5f;
+        agent.radius = 0.5f;
         agent.height = 5.5f;
         agent.baseOffset = 0f;
 
@@ -130,7 +91,7 @@ public class Phase3aSetup
             agent.speed = 3.5f;
             agent.acceleration = 8f;
             agent.angularSpeed = 120f;
-            agent.areaMask = (1 << NavMesh.GetAreaFromName("Walkable")) | (1 << NavMesh.GetAreaFromName("Road"));
+            agent.areaMask = NavMesh.AllAreas;
         }
         else
         {
@@ -161,31 +122,6 @@ public class Phase3aSetup
         }
     }
 
-    private static void RebakeMainScene()
-    {
-        string scenePath = "Assets/Scenes/CampusMainMap.unity";
-        var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
-        
-        // Modify default NavMesh build settings if possible, 
-        // or just rely on NavMeshSurface if the project uses it.
-        // Assuming Unity's built-in NavMeshBuilder or NavMeshSurface.
-        
-        // If there's a Unity.AI.Navigation.NavMeshSurface in the scene:
-        // Wait, standard AI package or NavMeshSurface?
-        // We will just invoke UnityEditor.AI.NavMeshBuilder.BuildNavMesh() 
-        // but we need to set the agent radius first.
-        SerializedObject navMeshSettings = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset")[0]); // NavMeshProjectSettings in newer unity
-        SerializedProperty settings = navMeshSettings.FindProperty("m_Settings");
-        if (settings != null && settings.arraySize > 0)
-        {
-            SerializedProperty s = settings.GetArrayElementAtIndex(0);
-            s.FindPropertyRelative("agentRadius").floatValue = 2.5f;
-            navMeshSettings.ApplyModifiedProperties();
-        }
 
-        UnityEditor.AI.NavMeshBuilder.BuildNavMesh();
-        EditorSceneManager.SaveScene(scene);
-        Debug.Log("NavMesh rebaked with 2.5m radius.");
-    }
 }
 #endif

@@ -44,13 +44,10 @@ namespace ROBOPath.Tests.EditMode
             // NavMeshAgent
             var agent = wheeledPrefab.GetComponent<NavMeshAgent>();
             Assert.IsNotNull(agent, "NavMeshAgent missing");
-            Assert.AreEqual(2.5f, agent.radius, 0.01f, "Agent radius must be 2.5");
+            Assert.AreEqual(0.5f, agent.radius, 0.01f, "Agent radius must be 0.5");
             
-            // Area Mask (Walkable + Road)
-            int walkable = NavMesh.GetAreaFromName("Walkable");
-            int road = NavMesh.GetAreaFromName("Road");
-            int expectedMask = (1 << walkable) | (1 << road);
-            Assert.AreEqual(expectedMask, agent.areaMask, "Wheeled Area Mask must be Walkable + Road");
+            // Area Mask
+            Assert.AreEqual(NavMesh.AllAreas, agent.areaMask, "Wheeled Area Mask must be Everything");
 
             // SensorOrigin
             Transform sensorOrigin = wheeledPrefab.transform.Find("Body/Sensor/SensorOrigin") ?? wheeledPrefab.transform.Find("Sensor/SensorOrigin");
@@ -78,7 +75,7 @@ namespace ROBOPath.Tests.EditMode
             Assert.IsTrue(rb.isKinematic);
 
             var agent = leggedPrefab.GetComponent<NavMeshAgent>();
-            Assert.AreEqual(2.5f, agent.radius, 0.01f);
+            Assert.AreEqual(0.5f, agent.radius, 0.01f);
             Assert.AreEqual(NavMesh.AllAreas, agent.areaMask);
         }
     }
