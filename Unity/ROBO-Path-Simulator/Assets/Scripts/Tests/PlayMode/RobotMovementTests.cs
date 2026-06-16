@@ -38,6 +38,17 @@ namespace ROBOPath.Tests.PlayMode
             if (environment != null) Object.DestroyImmediate(environment);
         }
 
+        /// <summary>NavMesh 위의 유효한 위치로 에이전트를 Warp하는 헬퍼</summary>
+        private bool WarpAgentToNavMesh(NavMeshAgent agent, Vector3 desiredPosition)
+        {
+            if (NavMesh.SamplePosition(desiredPosition, out NavMeshHit hit, 5.0f, NavMesh.AllAreas))
+            {
+                agent.Warp(hit.position);
+                return true;
+            }
+            return false;
+        }
+
         [UnityTest]
         public IEnumerator WheeledRobot_RejectsPathToStairs()
         {
@@ -47,13 +58,16 @@ namespace ROBOPath.Tests.PlayMode
             var agent = robotObj.AddComponent<NavMeshAgent>();
             var controller = robotObj.AddComponent<RobotController>();
 
-            robotObj.transform.position = Vector3.zero;
+            // NavMesh 위의 유효한 위치로 에이전트를 Warp
+            Assert.IsTrue(WarpAgentToNavMesh(agent, Vector3.zero), "Failed to warp agent to NavMesh");
             
-            yield return null; 
+            yield return null; // Wait one frame for agent to settle
 
-            controller.SetDestination(new Vector3(0, 1, 6)); 
+            Assert.IsTrue(agent.isOnNavMesh, "Agent must be on NavMesh before test");
 
-            yield return null; 
+            controller.SetDestination(new Vector3(0, 1, 6)); // 계단 영역
+
+            yield return null; // Wait one frame for path calculation
 
             Assert.IsFalse(agent.hasPath);
             Assert.AreEqual(0, agent.velocity.sqrMagnitude);
@@ -70,7 +84,9 @@ namespace ROBOPath.Tests.PlayMode
             var agent = robotObj.AddComponent<NavMeshAgent>();
             var controller = robotObj.AddComponent<RobotController>();
 
-            robotObj.transform.position = Vector3.zero;
+            // NavMesh 위의 유효한 위치로 에이전트를 Warp
+            Assert.IsTrue(WarpAgentToNavMesh(agent, Vector3.zero), "Failed to warp agent to NavMesh");
+
             yield return null;
 
             controller.manualInterventionOccurred = true;

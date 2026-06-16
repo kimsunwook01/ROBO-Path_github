@@ -13,9 +13,9 @@ namespace ROBOPath.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator Setup()
         {
-            // Load CampusMainMap
-            UnityEngine.SceneManagement.SceneManager.LoadScene("CampusMainMap");
-            yield return null; // wait one frame
+            // Editor 컨텍스트에서 실행되므로 EditorSceneManager.OpenScene을 사용
+            EditorSceneManager.OpenScene("Assets/Scenes/CampusMainMap.unity");
+            yield return null; // wait one frame for scene initialization
         }
 
         [UnityTest]
@@ -25,8 +25,6 @@ namespace ROBOPath.Tests.PlayMode
             GameObject spawnerObj = new GameObject("TestSpawner");
             var spawner = spawnerObj.AddComponent<RobotSpawner>();
             
-            // Assign prefabs from resources or assetdatabase? In PlayMode test, we can't easily use AssetDatabase unless it's in Editor.
-            // But we can do it if the test is running in Editor play mode. Let's use AssetDatabase to load prefab for test.
             #if UNITY_EDITOR
             spawner.wheeledPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Robot/Robot_Wheeled.prefab");
             spawner.leggedPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Robot/Robot_Legged.prefab");
@@ -47,6 +45,11 @@ namespace ROBOPath.Tests.PlayMode
 
             Assert.IsTrue(agentW.isOnNavMesh, "Wheeled robot failed to snap to NavMesh");
             Assert.IsTrue(agentL.isOnNavMesh, "Legged robot failed to snap to NavMesh");
+
+            // Cleanup
+            Object.DestroyImmediate(spawnerObj);
+            Object.DestroyImmediate(wheeled);
+            Object.DestroyImmediate(legged);
         }
     }
 }

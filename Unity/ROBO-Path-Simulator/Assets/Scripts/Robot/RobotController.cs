@@ -93,6 +93,8 @@ namespace ROBOPath.Robot
 
         private void SetDestinationInternal(Vector3 dest)
         {
+            if (agent == null || !agent.isOnNavMesh) return;
+
             NavMeshPath path = new NavMeshPath();
             if (agent.CalculatePath(dest, path))
             {
