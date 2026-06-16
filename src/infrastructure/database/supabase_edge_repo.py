@@ -35,3 +35,53 @@ class SupabaseEdgeRepository(EdgeRepository):
             else:
                 logger.error(f"Data/Parsing error fetching edges by node: {e}", exc_info=True)
             return []
+
+    def get_all_edges(self) -> List[Edge]:
+        try:
+            response = self.db.table("map_edges").select("*").execute()
+            return [Edge(**item) for item in response.data]
+        except Exception as e:
+            logger.error(f"Error fetching all edges: {e}", exc_info=True)
+            return []
+
+    def update_edge(self, edge: Edge) -> Edge:
+        try:
+            e_dict = {
+                "id": str(edge.id),
+                "from_node_id": str(edge.from_node_id),
+                "to_node_id": str(edge.to_node_id),
+                "distance_m": edge.distance_m,
+                "platform_stats": {k: v.model_dump() for k, v in edge.platform_stats.items()},
+                "version_added": edge.version_added,
+                "updated_at": edge.updated_at.isoformat()
+            }
+            response = self.db.table("map_edges").update(e_dict).eq("id", str(edge.id)).execute()
+            if response.data:
+                return Edge(**response.data[0])
+            return edge
+        except Exception as e:
+            logger.error(f"Error updating edge: {e}", exc_info=True)
+            return edge
+
+    def upsert_edges(self, edges: List[Edge]) -> bool:
+        if not edges:
+            return True
+        try:
+            edge_dicts = []
+            for e in edges:
+                e_dict = {
+                    "id": str(e.id),
+                    "from_node_id": str(e.from_node_id),
+                    "to_node_id": str(e.to_node_id),
+                    "distance_m": e.distance_m,
+                    "platform_stats": {k: v.model_dump() for k, v in e.platform_stats.items()},
+                    "version_added": e.version_added,
+                    "updated_at": e.updated_at.isoformat()
+                }
+                edge_dicts.append(e_dict)
+                
+            self.db.table("map_edges").upsert(edge_dicts).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Error in upsert_edges: {e}", exc_info=True)
+            return False

@@ -25,3 +25,9 @@ class EdgeRepository(Protocol):
         변경된 엣지 정보(플랫폼 통계 등)를 저장
         """
         ...
+
+    def upsert_edges(self, edges: List[Edge]) -> bool:
+        """
+        다수의 Edge를 DB에 일괄 삽입/갱신(Upsert)
+        """
+        ...

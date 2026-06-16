@@ -10,3 +10,9 @@ class NodeRepository(Protocol):
 
     def get_all_nodes(self) -> List[Node]:
         ...
+
+    def upsert_nodes(self, nodes: List[Node]) -> bool:
+        """
+        다수의 Node(및 자식 객체)를 DB에 일괄 삽입/갱신(Upsert)
+        """
+        ...

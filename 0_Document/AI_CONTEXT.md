@@ -113,7 +113,12 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
     - [x] [Phase 3a] 테스트 전체 통과 (EditMode 6/6 + PlayMode 6/6 = 12/12, Failed 0)
       - EditMode: FeedbackCalculator 3종 + Phase3a 프리팹 검증 2종 + 기본 1종
       - PlayMode: Spawner NavMesh 스냅 / RaycastScanner 발견 / 경로 거부(태그) / 부분 경로 거부 / 플래그 리셋 / 기본 1종
-    - (향후 과제) [Phase 3b] 백엔드 그래프 연결 (덤프 맵 데이터 → DB `map_edges` 및 Graph 객체 변환)
+    - [x] [Phase 3b] 백엔드 그래프 연결 (덤프 맵 데이터 → DB `map_edges` 및 Graph 객체 변환)
+      - [x] STEP 1: DB Repository에 `upsert_nodes`, `upsert_edges` 배치 처리 기능 추가
+      - [x] STEP 2: `MapImportService` 구현 (scene_dump.json 파싱 및 도메인 객체 변환)
+      - [x] STEP 3: CLI 실행 스크립트 `import_map_dump.py` 작성
+      - [x] STEP 4: Mock JSON을 활용한 단위 테스트 검증 (Failed 0)
+      - 관련 명세: `0_Document/ROBO-Path_Phase3b_Graph_DB_Import_Spec.md`
     - [x] [Phase 3c] `HazardTileController` 구현 완료 — Tile_Hazard 활성/비활성 상태 전환 및 투명화 기능
       - `Assets/Scripts/Tile/HazardTileController.cs` 신규 작성 (ROBOPath.Tile 어셈블리)
       - `startActive = false` 기본값 → 비활성 시 MeshRenderer 비표시, Collider 유지(NavMesh 통행 허용)
