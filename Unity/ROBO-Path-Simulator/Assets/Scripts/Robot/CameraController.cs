@@ -30,7 +30,7 @@ namespace ROBOPath.Robot
 
         void RefreshRobots()
         {
-            robots = FindObjectsOfType<RobotController>();
+            robots = FindObjectsByType<RobotController>(FindObjectsSortMode.None);
         }
 
         void LateUpdate()
