@@ -90,7 +90,7 @@ class MapImportService:
                 
             from_node = node_dict[from_id]
             
-            for to_id in adj.get("connected_to", []):
+            for to_id in adj.get("adjacent_to", []):
                 to_id = str(to_id)
                 if to_id not in node_dict:
                     continue
@@ -105,8 +105,9 @@ class MapImportService:
                 if dist <= 0.0:
                     dist = 0.1 # 최소 거리 보장
                     
-                # Edge 중복 검사 (단방향만 저장할지 양방향 저장할지에 따라 다름)
-                # 방향성이 있는 그래프라면 양방향 모두 저장
+                # Edge 중복 검사
+                # from-to 방향 쌍이 중복되지 않도록 방어 코드 추가 가능하지만, 
+                # 방향성이 있는 그래프라면 그대로 추가
                 edge_models.append(Edge(
                     from_node_id=from_node.id,
                     to_node_id=to_node.id,
