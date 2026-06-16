@@ -82,8 +82,8 @@ namespace ROBOPath.Robot
 
                     if (moveDir.sqrMagnitude > 0.01f)
                     {
-                        // 로봇을 항상 카메라 정면(수평 투영)을 향해 회전시킴 (후진 시 180도 도는 문제 방지)
-                        Quaternion targetRotation = Quaternion.LookRotation(camFwd);
+                        // 부드러운 회전 보간
+                        Quaternion targetRotation = Quaternion.LookRotation(moveDir);
                         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, manualTurnSpeed * Time.deltaTime);
                         
                         agent.Move(moveDir * manualMoveSpeed * Time.deltaTime);
