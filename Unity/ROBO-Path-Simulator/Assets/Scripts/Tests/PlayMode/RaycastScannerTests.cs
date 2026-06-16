@@ -18,6 +18,12 @@ namespace ROBOPath.Tests.PlayMode
         [UnityTest]
         public IEnumerator RaycastScanner_DiscoversNode_ButIgnoresRobotLayer()
         {
+            if (!Application.isPlaying)
+            {
+                Assert.Ignore("PlayMode 전용 테스트: Test Runner의 PlayMode 탭에서 실행하세요.");
+                yield break;
+            }
+
             var robotObj = new GameObject("Robot");
             robotObj.layer = LayerMask.NameToLayer("Robot");
             var col = robotObj.AddComponent<BoxCollider>();

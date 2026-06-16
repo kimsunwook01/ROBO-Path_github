@@ -4,6 +4,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 
 namespace ROBOPath.Tests.PlayMode
@@ -13,14 +14,25 @@ namespace ROBOPath.Tests.PlayMode
         [UnitySetUp]
         public IEnumerator Setup()
         {
-            // Editor 컨텍스트에서 실행되므로 EditorSceneManager.OpenScene을 사용
-            EditorSceneManager.OpenScene("Assets/Scenes/CampusMainMap.unity");
+            if (!Application.isPlaying)
+                yield break;
+
+            // PlayMode 전용: 씬을 Build Settings 없이 로드
+            EditorSceneManager.LoadSceneInPlayMode(
+                "Assets/Scenes/CampusMainMap.unity",
+                new LoadSceneParameters(LoadSceneMode.Single));
             yield return null; // wait one frame for scene initialization
         }
 
         [UnityTest]
         public IEnumerator Spawner_InstantiatesRobots_OnNavMesh()
         {
+            if (!Application.isPlaying)
+            {
+                Assert.Ignore("PlayMode 전용 테스트: Test Runner의 PlayMode 탭에서 실행하세요.");
+                yield break;
+            }
+
             // Find Spawner or create one
             GameObject spawnerObj = new GameObject("TestSpawner");
             var spawner = spawnerObj.AddComponent<RobotSpawner>();

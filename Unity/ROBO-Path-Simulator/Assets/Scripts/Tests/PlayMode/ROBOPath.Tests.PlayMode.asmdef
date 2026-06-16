@@ -7,9 +7,7 @@
         "ROBOPath.Robot",
         "Unity.AI.Navigation"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
