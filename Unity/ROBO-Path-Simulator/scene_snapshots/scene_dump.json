@@ -1,7 +1,7 @@
 {
     "summary": {
         "total_nodes": 34,
-        "total_tiles": 3162,
+        "total_tiles": 3160,
         "total_overlay_tiles": 74,
         "total_obstacles": 0,
         "min_elevation": -6.0,
@@ -252,13 +252,13 @@
             "usage": "destination"
         },
         {
-            "id": "Tile_Destination_x-22_z11_y32_r0",
+            "id": "Tile_Destination_x-22_z12_y32_r0",
             "name": "Tile_Destination",
             "tag": "Node_Destination",
             "position": {
                 "x": -215.0,
                 "y": 32.25,
-                "z": 115.0
+                "z": 125.0
             },
             "rotation_y": 0.0,
             "size": {
@@ -32785,42 +32785,6 @@
                 "x": -45.0,
                 "y": 37.0,
                 "z": 265.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 42.0
-        },
-        {
-            "id": "Flat_10_x-5_z27_y37_r0",
-            "name": "Flat_10",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": -45.0,
-                "y": 37.0,
-                "z": 275.0
-            },
-            "rotation_y": 0.0,
-            "size": {
-                "x": 10.0,
-                "y": 10.0,
-                "z": 10.0
-            },
-            "terrain_type": "Terrain_Flat",
-            "elevation": 42.0
-        },
-        {
-            "id": "Flat_10_x-5_z28_y37_r0",
-            "name": "Flat_10",
-            "tag": "Terrain_Flat",
-            "position": {
-                "x": -45.0,
-                "y": 37.0,
-                "z": 285.0
             },
             "rotation_y": 0.0,
             "size": {
@@ -84187,7 +84151,6 @@
                 "Flat_10_x-6_z26_y17_r0",
                 "Flat_10_x-6_z28_y17_r0",
                 "Flat_10_x-5_z27_y17_r0",
-                "Flat_10_x-5_z27_y37_r0",
                 "Flat_10_x-5_z27_y47_r0"
             ]
         },
@@ -84198,7 +84161,6 @@
                 "Flat_10_x-6_z27_y17_r0",
                 "Flat_10_x-6_z29_y17_r0",
                 "Flat_10_x-5_z28_y17_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z28_y47_r0"
             ]
         },
@@ -84388,7 +84350,6 @@
                 "Flat_10_x-5_z26_y27_r0",
                 "Flat_10_x-5_z25_y37_r0",
                 "Flat_10_x-5_z26_y37_r0",
-                "Flat_10_x-5_z27_y37_r0",
                 "Flat_10_x-5_z25_y47_r0",
                 "Flat_10_x-5_z26_y47_r0",
                 "Flat_10_x-5_z27_y47_r0",
@@ -84403,8 +84364,6 @@
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z26_y27_r0",
                 "Flat_10_x-5_z26_y37_r0",
-                "Flat_10_x-5_z27_y37_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z26_y47_r0",
                 "Flat_10_x-5_z27_y47_r0",
                 "Flat_10_x-5_z28_y47_r0",
@@ -84418,8 +84377,6 @@
                 "Flat_10_x-5_z27_y17_r0",
                 "Flat_10_x-5_z29_y17_r0",
                 "Flat_10_x-5_z29_y27_r0",
-                "Flat_10_x-5_z27_y37_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z29_y37_r0",
                 "Flat_10_x-5_z27_y47_r0",
                 "Flat_10_x-5_z28_y47_r0",
@@ -84433,7 +84390,6 @@
                 "Flat_10_x-6_z29_y17_r0",
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z29_y27_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z29_y37_r0",
                 "Flat_10_x-5_z30_y17_r0",
                 "Flat_10_x-5_z30_y27_r0",
@@ -84457,7 +84413,6 @@
                 "Flat_10_x-5_z27_y17_r0",
                 "Flat_10_x-5_z25_y37_r0",
                 "Flat_10_x-5_z26_y37_r0",
-                "Flat_10_x-5_z27_y37_r0",
                 "Flat_10_x-5_z25_y47_r0",
                 "Flat_10_x-5_z26_y47_r0",
                 "Flat_10_x-5_z27_y47_r0",
@@ -84470,7 +84425,6 @@
                 "Flat_10_x-6_z29_y17_r0",
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z29_y17_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z29_y37_r0",
                 "Flat_10_x-5_z30_y17_r0",
                 "Flat_10_x-5_z30_y27_r0",
@@ -84655,43 +84609,10 @@
                 "Flat_10_x-5_z27_y17_r0",
                 "Flat_10_x-5_z26_y27_r0",
                 "Flat_10_x-5_z25_y37_r0",
-                "Flat_10_x-5_z27_y37_r0",
                 "Flat_10_x-5_z25_y47_r0",
                 "Flat_10_x-5_z26_y47_r0",
                 "Flat_10_x-5_z27_y47_r0",
                 "Flat_10_x-4_z26_y17_r0"
-            ]
-        },
-        {
-            "id": "Flat_10_x-5_z27_y37_r0",
-            "adjacent_to": [
-                "Flat_10_x-6_z27_y17_r0",
-                "Flat_10_x-5_z26_y17_r0",
-                "Flat_10_x-5_z27_y17_r0",
-                "Flat_10_x-5_z28_y17_r0",
-                "Flat_10_x-5_z26_y27_r0",
-                "Flat_10_x-5_z26_y37_r0",
-                "Flat_10_x-5_z28_y37_r0",
-                "Flat_10_x-5_z26_y47_r0",
-                "Flat_10_x-5_z27_y47_r0",
-                "Flat_10_x-5_z28_y47_r0",
-                "Flat_10_x-4_z27_y17_r0"
-            ]
-        },
-        {
-            "id": "Flat_10_x-5_z28_y37_r0",
-            "adjacent_to": [
-                "Flat_10_x-6_z28_y17_r0",
-                "Flat_10_x-5_z27_y17_r0",
-                "Flat_10_x-5_z28_y17_r0",
-                "Flat_10_x-5_z29_y17_r0",
-                "Flat_10_x-5_z29_y27_r0",
-                "Flat_10_x-5_z27_y37_r0",
-                "Flat_10_x-5_z29_y37_r0",
-                "Flat_10_x-5_z27_y47_r0",
-                "Flat_10_x-5_z28_y47_r0",
-                "Flat_10_x-5_z29_y47_r0",
-                "Flat_10_x-4_z28_y17_r0"
             ]
         },
         {
@@ -84701,7 +84622,6 @@
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z29_y17_r0",
                 "Flat_10_x-5_z29_y27_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z30_y17_r0",
                 "Flat_10_x-5_z30_y27_r0",
                 "Flat_10_x-5_z30_y37_r0",
@@ -85409,7 +85329,6 @@
                 "Flat_10_x-5_z26_y27_r0",
                 "Flat_10_x-5_z25_y37_r0",
                 "Flat_10_x-5_z26_y37_r0",
-                "Flat_10_x-5_z27_y37_r0",
                 "Flat_10_x-5_z25_y47_r0",
                 "Flat_10_x-5_z27_y47_r0",
                 "Flat_10_x-4_z26_y17_r0"
@@ -85424,8 +85343,6 @@
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z26_y27_r0",
                 "Flat_10_x-5_z26_y37_r0",
-                "Flat_10_x-5_z27_y37_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z26_y47_r0",
                 "Flat_10_x-5_z28_y47_r0",
                 "Flat_10_x-4_z27_y17_r0"
@@ -85439,8 +85356,6 @@
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z29_y17_r0",
                 "Flat_10_x-5_z29_y27_r0",
-                "Flat_10_x-5_z27_y37_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z29_y37_r0",
                 "Flat_10_x-5_z27_y47_r0",
                 "Flat_10_x-5_z29_y47_r0",
@@ -85454,7 +85369,6 @@
                 "Flat_10_x-5_z28_y17_r0",
                 "Flat_10_x-5_z29_y17_r0",
                 "Flat_10_x-5_z29_y27_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z29_y37_r0",
                 "Flat_10_x-5_z30_y17_r0",
                 "Flat_10_x-5_z30_y27_r0",
@@ -86209,7 +86123,6 @@
             "id": "Flat_10_x-4_z27_y17_r0",
             "adjacent_to": [
                 "Flat_10_x-5_z27_y17_r0",
-                "Flat_10_x-5_z27_y37_r0",
                 "Flat_10_x-5_z27_y47_r0",
                 "Flat_10_x-4_z26_y17_r0",
                 "Flat_10_x-4_z28_y17_r0",
@@ -86220,7 +86133,6 @@
             "id": "Flat_10_x-4_z28_y17_r0",
             "adjacent_to": [
                 "Flat_10_x-5_z28_y17_r0",
-                "Flat_10_x-5_z28_y37_r0",
                 "Flat_10_x-5_z28_y47_r0",
                 "Flat_10_x-4_z27_y17_r0",
                 "Flat_10_x-4_z29_y17_r0",
