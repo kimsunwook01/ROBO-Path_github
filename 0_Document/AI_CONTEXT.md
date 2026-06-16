@@ -94,8 +94,26 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
     - [x] 맵 에디터 도구 구현 및 검증 완료 (격자 배치/적층/회전/삭제/선택, 동적 팔레트)
     - [x] 대규모 메인 맵 제작 완료 (약 3162블록 규모, 88m 고저차, 거점/타일 배치, NavMesh 베이크 완료)
     - [x] 씬 덤프 개편 완료 (고유 ID 체계 도입, overlay_tiles 섹션 분리, covers_block_id 매핑) - A* 그래프 변환용 고품질 데이터 확보
-  - [ ] [Phase 3] 로봇 2종(Wheeled/Legged) 구현 (NavMesh + Raycast + 피드백 계산 로직)
-    - (향후 과제) 백엔드 그래프 연결 (덤프 맵 데이터 → DB `map_edges` 및 Graph 객체 변환)
+  - [x] [Phase 3] 로봇 2종(Wheeled/Legged) 구현 및 테스트 완료
+    - [x] [Phase 3a] 로봇 프리팹 2종 구현 완료 (Robot_Wheeled, Robot_Legged)
+      - NavMeshAgent(radius 0.5), Rigidbody(kinematic), BoxCollider, RobotIdentify 컴포넌트 구성
+      - Robot 레이어 분리, SensorOrigin 계층구조
+    - [x] [Phase 3a] RobotSpawner 구현 완료 (Node_Station 기반 자동 배치, NavMesh.SamplePosition + Warp)
+    - [x] [Phase 3a] RobotController 구현 완료
+      - NavMesh 경로 탐색 + ValidatePath (Wheeled의 Path_Stair 태그 거부)
+      - **부분 경로(PathPartial) 거부** — 도달 불가 목적지로의 부분 주행 방지
+      - 수동/자동 모드 전환, manualInterventionOccurred 플래그
+    - [x] [Phase 3a] RaycastScanner 구현 완료 (180° 팬 스캔, Robot 레이어 제외, ITelemetrySink 연동)
+    - [x] [Phase 3a] FeedbackCalculator 구현 완료
+      - **Newtonsoft.Json(JObject)** 기반 JSON 파싱 (정규식/IndexOf 제거)
+      - 플랫폼(wheeled/legged) + 지형 태그로 정확 lookup
+      - null L/S/E 및 traversable=false 안전 처리, 노이즈 주입(INoiseGenerator DI)
+      - 저장소 루트 `config/cost_profiles.json` 직접 읽기 (단일 원본 원칙)
+    - [x] [Phase 3a] LogTelemetrySink 구현 완료 (ITelemetrySink 인터페이스, 피드백/발견 이벤트 로깅)
+    - [x] [Phase 3a] 테스트 전체 통과 (EditMode 6/6 + PlayMode 6/6 = 12/12, Failed 0)
+      - EditMode: FeedbackCalculator 3종 + Phase3a 프리팹 검증 2종 + 기본 1종
+      - PlayMode: Spawner NavMesh 스냅 / RaycastScanner 발견 / 경로 거부(태그) / 부분 경로 거부 / 플래그 리셋 / 기본 1종
+    - (향후 과제) [Phase 3b] 백엔드 그래프 연결 (덤프 맵 데이터 → DB `map_edges` 및 Graph 객체 변환)
   - [ ] [Phase 4] Unity 내장 WebSocket 서버(`WebSocketServer.cs`) 및 C# Python 브릿지(Supabase 적재) 로직 작성
   - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
