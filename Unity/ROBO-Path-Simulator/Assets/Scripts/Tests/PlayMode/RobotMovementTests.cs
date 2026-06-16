@@ -20,16 +20,19 @@ namespace ROBOPath.Tests.PlayMode
         {
             environment = new GameObject("Environment");
             
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            // 일반 바닥 타일 (Cube, 상면 y=0)
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             floor.transform.parent = environment.transform;
-            floor.transform.position = testOrigin;
-            floor.transform.localScale = new Vector3(10, 1, 10);
-            
-            var stair = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            stair.transform.parent = environment.transform;
-            stair.transform.position = testOrigin + new Vector3(0, 0.5f, 5);
-            stair.transform.localScale = new Vector3(10, 1, 5);
-            stair.tag = "Path_Stair";
+            floor.transform.position = testOrigin + new Vector3(0, -0.5f, 0);
+            floor.transform.localScale = new Vector3(20, 1, 10);
+
+            // 계단 타일 (Cube, 상면 y=0 — 바닥과 동일 높이로 NavMesh 자연 연결)
+            // Step Height 매직넘버에 의존하지 않음
+            var stairTile = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            stairTile.transform.parent = environment.transform;
+            stairTile.transform.position = testOrigin + new Vector3(0, -0.5f, 10);
+            stairTile.transform.localScale = new Vector3(20, 1, 10);
+            stairTile.tag = "Path_Stair";
 
             var surface = environment.AddComponent<NavMeshSurface>();
             surface.BuildNavMesh();
@@ -41,6 +44,11 @@ namespace ROBOPath.Tests.PlayMode
             if (environment != null) Object.DestroyImmediate(environment);
         }
 
+        /// <summary>
+        /// 바퀴형 로봇이 Path_Stair 태그 지형을 가로지르는 경로를 거부하는지 검증.
+        /// 바닥과 계단 타일이 같은 높이(y=0)에 있어 NavMesh가 자연스럽게 연결되므로,
+        /// CalculatePath 는 PathComplete 경로를 반환하지만 ValidatePath 가 태그를 감지하여 거부한다.
+        /// </summary>
         [UnityTest]
         public IEnumerator WheeledRobot_RejectsPathToStairs()
         {
@@ -56,7 +64,7 @@ namespace ROBOPath.Tests.PlayMode
             var agent = robotObj.AddComponent<NavMeshAgent>();
             var controller = robotObj.AddComponent<RobotController>();
 
-            // 테스트 원점의 NavMesh 위로 에이전트를 Warp
+            // NavMesh 위의 유효한 위치로 에이전트를 Warp (바닥 타일 위)
             if (NavMesh.SamplePosition(testOrigin, out NavMeshHit hit, 5.0f, NavMesh.AllAreas))
             {
                 agent.Warp(hit.position);
@@ -67,13 +75,54 @@ namespace ROBOPath.Tests.PlayMode
 
             Assert.IsTrue(agent.isOnNavMesh, "Agent must be on NavMesh before test");
 
-            // 계단 영역으로 목적지 설정
-            controller.SetDestination(testOrigin + new Vector3(0, 1, 6));
+            // 계단 타일 위의 목적지 설정 (z = testOrigin.z + 12, 계단 타일 z범위 +5~+15)
+            controller.SetDestination(testOrigin + new Vector3(0, 0, 12));
 
             yield return null;
 
-            // 바퀴형 로봇은 Path_Stair를 포함한 경로를 거부해야 함
-            Assert.IsFalse(agent.hasPath, "Wheeled robot should reject path through stairs");
+            // 바퀴형 로봇은 Path_Stair 태그 지형을 포함한 경로를 거부해야 함
+            Assert.IsFalse(agent.hasPath, "Wheeled robot should reject path through Path_Stair terrain");
+
+            if (robotObj != null) Object.DestroyImmediate(robotObj);
+        }
+
+        /// <summary>
+        /// 도달 불가능한 목적지에 대한 부분 경로(PathPartial)를 거부하는지 검증.
+        /// 배달 로봇이 목적지에 도달할 수 없을 때 부분 주행하지 않도록 한다.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PartialPath_IsRejected_WhenDestinationUnreachable()
+        {
+            if (!Application.isPlaying)
+            {
+                Assert.Ignore("PlayMode 전용 테스트: Test Runner의 PlayMode 탭에서 실행하세요.");
+                yield break;
+            }
+
+            var robotObj = new GameObject("Robot");
+            var identify = robotObj.AddComponent<RobotIdentify>();
+            identify.platform = RobotPlatform.Legged;
+            var agent = robotObj.AddComponent<NavMeshAgent>();
+            var controller = robotObj.AddComponent<RobotController>();
+
+            // NavMesh 위의 유효한 위치로 에이전트를 Warp
+            if (NavMesh.SamplePosition(testOrigin, out NavMeshHit hit, 5.0f, NavMesh.AllAreas))
+            {
+                agent.Warp(hit.position);
+            }
+
+            yield return null;
+            yield return null;
+
+            Assert.IsTrue(agent.isOnNavMesh, "Agent must be on NavMesh before test");
+
+            // NavMesh 영역 밖의 도달 불가능한 목적지 설정
+            controller.SetDestination(testOrigin + new Vector3(0, 0, 500));
+
+            yield return null;
+
+            // 부분 경로가 거부되어 hasPath == false
+            Assert.IsFalse(agent.hasPath, "Partial path to unreachable destination should be rejected");
 
             if (robotObj != null) Object.DestroyImmediate(robotObj);
         }

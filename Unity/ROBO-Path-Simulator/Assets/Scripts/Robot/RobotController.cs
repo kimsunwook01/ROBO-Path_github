@@ -98,13 +98,21 @@ namespace ROBOPath.Robot
             NavMeshPath path = new NavMeshPath();
             if (agent.CalculatePath(dest, path))
             {
+                // 부분 경로(도달 불가) 거부 — 배달 로봇이 도달할 수 없는 목적지로 부분 주행하는 것을 방지
+                if (path.status != UnityEngine.AI.NavMeshPathStatus.PathComplete)
+                {
+                    Debug.LogWarning($"[RobotController] Path rejected for {identify.platform} — destination unreachable (status: {path.status})");
+                    agent.ResetPath();
+                    return;
+                }
+
                 if (ValidatePath(path))
                 {
                     agent.SetPath(path);
                 }
                 else
                 {
-                    Debug.LogWarning($"[RobotController] Path rejected for {identify.platform}");
+                    Debug.LogWarning($"[RobotController] Path rejected for {identify.platform} — terrain validation failed");
                     agent.ResetPath();
                 }
             }
