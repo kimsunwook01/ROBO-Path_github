@@ -125,4 +125,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9850a9c2eb9a3ee4188140a7ce6d5b64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: ROBOPath.Tile::ROBOPath.Tile.HazardTileController
-  startActive: 0
+  startActive: 1
