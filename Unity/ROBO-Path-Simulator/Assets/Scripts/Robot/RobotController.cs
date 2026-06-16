@@ -13,9 +13,10 @@ namespace ROBOPath.Robot
 
         public bool isManualMode = false;
         public bool manualInterventionOccurred = false;
+        public bool isActiveControlled = false;
 
         public float manualMoveSpeed = 3f;
-        public float manualTurnSpeed = 120f;
+        public float manualTurnSpeed = 10f; // 회전 보간 속도로 용도 변경
 
         private Vector3? currentDestination = null;
 
@@ -28,11 +29,11 @@ namespace ROBOPath.Robot
 
         void Update()
         {
-            if (isManualMode)
+            if (isManualMode && isActiveControlled)
             {
                 HandleManualMovement();
             }
-            else
+            else if (!isManualMode)
             {
                 CheckDestinationReached();
             }
@@ -66,10 +67,28 @@ namespace ROBOPath.Robot
             {
                 manualInterventionOccurred = true;
 
-                transform.Rotate(Vector3.up, h * manualTurnSpeed * Time.deltaTime);
+                Camera cam = Camera.main;
+                if (cam != null)
+                {
+                    Vector3 camFwd = cam.transform.forward;
+                    Vector3 camRight = cam.transform.right;
 
-                Vector3 moveDir = transform.forward * v * manualMoveSpeed * Time.deltaTime;
-                agent.Move(moveDir);
+                    camFwd.y = 0;
+                    camRight.y = 0;
+                    camFwd.Normalize();
+                    camRight.Normalize();
+
+                    Vector3 moveDir = (camFwd * v + camRight * h).normalized;
+
+                    if (moveDir.sqrMagnitude > 0.01f)
+                    {
+                        // 부드러운 회전 보간
+                        Quaternion targetRotation = Quaternion.LookRotation(moveDir);
+                        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, manualTurnSpeed * Time.deltaTime);
+                        
+                        agent.Move(moveDir * manualMoveSpeed * Time.deltaTime);
+                    }
+                }
 
                 if (!agent.isOnNavMesh)
                 {

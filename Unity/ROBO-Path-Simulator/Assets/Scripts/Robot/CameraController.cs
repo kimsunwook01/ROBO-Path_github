@@ -25,22 +25,50 @@ namespace ROBOPath.Robot
             x = angles.y;
             y = angles.x;
 
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
             RefreshRobots();
         }
 
         void RefreshRobots()
         {
             robots = FindObjectsByType<RobotController>(FindObjectsSortMode.None);
+            UpdateActiveRobot();
+        }
+
+        void UpdateActiveRobot()
+        {
+            if (robots == null || robots.Length == 0) return;
+            for (int i = 0; i < robots.Length; i++)
+            {
+                robots[i].isActiveControlled = (i == currentTargetIndex);
+            }
         }
 
         void LateUpdate()
         {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                if (Cursor.lockState == CursorLockMode.Locked)
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
+                else
+                {
+                    Cursor.lockState = CursorLockMode.Locked;
+                    Cursor.visible = false;
+                }
+            }
+
             if (Input.GetKeyDown(KeyCode.Tab))
             {
                 RefreshRobots();
                 if (robots.Length > 0)
                 {
                     currentTargetIndex = (currentTargetIndex + 1) % robots.Length;
+                    UpdateActiveRobot();
                 }
             }
 
@@ -54,7 +82,8 @@ namespace ROBOPath.Robot
                 Debug.Log($"[CameraController] Toggled Mode for {target.name}. Manual: {robots[currentTargetIndex].isManualMode}");
             }
 
-            if (Input.GetMouseButton(1) || Input.GetMouseButton(0))
+            // 클릭 없이 마우스 이동만으로 회전 (커서가 잠겨 있을 때만)
+            if (Cursor.lockState == CursorLockMode.Locked)
             {
                 x += Input.GetAxis("Mouse X") * xSpeed * distance * 0.02f;
                 y -= Input.GetAxis("Mouse Y") * ySpeed * 0.02f;

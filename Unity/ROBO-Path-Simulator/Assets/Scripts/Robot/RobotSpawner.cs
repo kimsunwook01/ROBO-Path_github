@@ -14,14 +14,17 @@ public class RobotSpawner : MonoBehaviour
     public void SpawnRobots()
     {
         GameObject[] stations = GameObject.FindGameObjectsWithTag("Node_Station");
-        if (stations.Length >= 2)
+        if (stations.Length == 0)
         {
-            SpawnAt(wheeledPrefab, stations[0].transform.position);
-            SpawnAt(leggedPrefab, stations[1].transform.position);
+            Debug.LogWarning("No Node_Station tags found to spawn robots.");
+            return;
         }
-        else
+
+        for (int i = 0; i < stations.Length; i++)
         {
-            Debug.LogWarning("Not enough Node_Station tags found to spawn robots.");
+            // 교대로 배정 (짝수: Wheeled, 홀수: Legged)
+            GameObject prefabToSpawn = (i % 2 == 0) ? wheeledPrefab : leggedPrefab;
+            SpawnAt(prefabToSpawn, stations[i].transform.position);
         }
     }
 
