@@ -9,7 +9,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9003637157932202052}
-  m_Layer: 0
+  - component: {fileID: 5510550821033027753}
+  - component: {fileID: 8745689826661715386}
+  - component: {fileID: 4980650735609561328}
+  - component: {fileID: 2960788521046588035}
+  m_Layer: 8
   m_Name: Robot_Legged
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -32,6 +36,89 @@ Transform:
   - {fileID: 2888697951760954981}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5510550821033027753
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608190724462020645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ccc2c6789f24c64986edf1d517a72fe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ROBOPath.Robot::RobotIdentify
+  platform: 1
+--- !u!54 &8745689826661715386
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608190724462020645}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!195 &4980650735609561328
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608190724462020645}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 2.5
+  m_Speed: 2.5
+  m_Acceleration: 5
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 5.5
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!65 &2960788521046588035
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608190724462020645}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 5, y: 5, z: 8}
+  m_Center: {x: 0, y: 3, z: 0}
 --- !u!1 &2732925360488165323
 GameObject:
   m_ObjectHideFlags: 0
@@ -43,8 +130,7 @@ GameObject:
   - component: {fileID: 7019347001121625911}
   - component: {fileID: 163545660160086941}
   - component: {fileID: 9148039836361853509}
-  - component: {fileID: 8045882273711565791}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Flagpole
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -123,29 +209,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &8045882273711565791
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2732925360488165323}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5000001
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
 --- !u!1 &2937825717745981425
 GameObject:
   m_ObjectHideFlags: 0
@@ -157,8 +220,7 @@ GameObject:
   - component: {fileID: 2888697951760954981}
   - component: {fileID: 7808354904021411087}
   - component: {fileID: 3733733507305854422}
-  - component: {fileID: 3921892742586326836}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Body
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -243,27 +305,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &3921892742586326836
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2937825717745981425}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3276598080486010372
 GameObject:
   m_ObjectHideFlags: 0
@@ -275,8 +316,7 @@ GameObject:
   - component: {fileID: 5714189176899171818}
   - component: {fileID: 8026287463378657866}
   - component: {fileID: 1673597268336419697}
-  - component: {fileID: 4835300759718712119}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Leg_LF
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -355,27 +395,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &4835300759718712119
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3276598080486010372}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4122200903204755719
 GameObject:
   m_ObjectHideFlags: 0
@@ -387,8 +406,7 @@ GameObject:
   - component: {fileID: 8243871542103377798}
   - component: {fileID: 5175533930683154732}
   - component: {fileID: 7487442252872793155}
-  - component: {fileID: 5779063439334354975}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Leg_RF
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -467,27 +485,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &5779063439334354975
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4122200903204755719}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4313227643304435418
 GameObject:
   m_ObjectHideFlags: 0
@@ -497,7 +494,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4030012106813074136}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Flag
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -530,7 +527,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4900822069892119183}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: SensorOrigin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -563,8 +560,7 @@ GameObject:
   - component: {fileID: 8855687336038730342}
   - component: {fileID: 1494140458608320818}
   - component: {fileID: 8688671219729967550}
-  - component: {fileID: 6982375265636214416}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Fly
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -643,27 +639,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &6982375265636214416
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5906160848218187558}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7627545991617481846
 GameObject:
   m_ObjectHideFlags: 0
@@ -675,8 +650,7 @@ GameObject:
   - component: {fileID: 8139569490301264154}
   - component: {fileID: 4937842248496425606}
   - component: {fileID: 2763008484083516211}
-  - component: {fileID: 3795807247311120669}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Leg_RB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -755,27 +729,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &3795807247311120669
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7627545991617481846}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8396603346632857145
 GameObject:
   m_ObjectHideFlags: 0
@@ -787,8 +740,7 @@ GameObject:
   - component: {fileID: 7804301763391599183}
   - component: {fileID: 1692454479864269609}
   - component: {fileID: 8763268523766668412}
-  - component: {fileID: 1695474505084585358}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Sensor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -868,27 +820,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &1695474505084585358
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8396603346632857145}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8947411451422239120
 GameObject:
   m_ObjectHideFlags: 0
@@ -900,8 +831,7 @@ GameObject:
   - component: {fileID: 6179334813030720929}
   - component: {fileID: 9103957231406265070}
   - component: {fileID: 2489486058155940924}
-  - component: {fileID: 701836948541172199}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Leg_LB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -980,24 +910,3 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &701836948541172199
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8947411451422239120}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
