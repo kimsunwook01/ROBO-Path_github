@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 169299525}
   - component: {fileID: 169299524}
   m_Layer: 0
-  m_Name: Leg (2)
+  m_Name: Leg_RF
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -371,7 +371,7 @@ GameObject:
   - component: {fileID: 321831565}
   - component: {fileID: 321831564}
   m_Layer: 0
-  m_Name: Leg (3)
+  m_Name: Leg_RB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -998,7 +998,7 @@ GameObject:
   - component: {fileID: 1054973264}
   - component: {fileID: 1054973263}
   m_Layer: 0
-  m_Name: Leg
+  m_Name: Leg_LB
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1591,7 +1591,7 @@ GameObject:
   - component: {fileID: 1707080753}
   - component: {fileID: 1707080752}
   m_Layer: 0
-  m_Name: Leg (1)
+  m_Name: Leg_LF
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
