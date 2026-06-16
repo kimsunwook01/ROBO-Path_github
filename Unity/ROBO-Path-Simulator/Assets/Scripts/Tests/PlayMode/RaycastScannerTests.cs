@@ -35,8 +35,8 @@ namespace ROBOPath.Tests.PlayMode
 
             Assert.GreaterOrEqual(sink.DiscoveryCount, 1);
 
-            Object.Destroy(robotObj);
-            Object.Destroy(nodeObj);
+            if (robotObj != null) Object.DestroyImmediate(robotObj);
+            if (nodeObj != null) Object.DestroyImmediate(nodeObj);
         }
     }
 }

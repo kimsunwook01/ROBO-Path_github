@@ -35,7 +35,7 @@ namespace ROBOPath.Tests.PlayMode
         [TearDown]
         public void TearDown()
         {
-            Object.Destroy(environment);
+            if (environment != null) Object.DestroyImmediate(environment);
         }
 
         [UnityTest]
@@ -58,7 +58,7 @@ namespace ROBOPath.Tests.PlayMode
             Assert.IsFalse(agent.hasPath);
             Assert.AreEqual(0, agent.velocity.sqrMagnitude);
 
-            Object.Destroy(robotObj);
+            if (robotObj != null) Object.DestroyImmediate(robotObj);
         }
 
         [UnityTest]
@@ -78,7 +78,7 @@ namespace ROBOPath.Tests.PlayMode
 
             Assert.IsFalse(controller.manualInterventionOccurred);
 
-            Object.Destroy(robotObj);
+            if (robotObj != null) Object.DestroyImmediate(robotObj);
         }
     }
 }

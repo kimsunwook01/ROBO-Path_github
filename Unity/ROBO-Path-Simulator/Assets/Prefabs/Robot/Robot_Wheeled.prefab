@@ -379,6 +379,9 @@ GameObject:
   - component: {fileID: 8643196909010963634}
   - component: {fileID: 1860887310522110834}
   - component: {fileID: 2946587068640315994}
+  - component: {fileID: -2530012158148096404}
+  - component: {fileID: -1131445001278467023}
+  - component: {fileID: -6649797809809280614}
   m_Layer: 8
   m_Name: Robot_Wheeled
   m_TagString: Untagged
@@ -485,6 +488,51 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 5, y: 5, z: 8}
   m_Center: {x: 0, y: 3, z: 0}
+--- !u!114 &-2530012158148096404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1876475397287312729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27f6a71934fdac340809e8fa3a98aa35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ROBOPath.Robot::ROBOPath.Robot.LogTelemetrySink
+--- !u!114 &-1131445001278467023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1876475397287312729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 002cf9de5deed074ca1f69025efda76f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ROBOPath.Robot::ROBOPath.Robot.RobotController
+  isManualMode: 0
+  manualInterventionOccurred: 0
+  manualMoveSpeed: 3
+  manualTurnSpeed: 120
+--- !u!114 &-6649797809809280614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1876475397287312729}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f716e95663b75db4cb5a9dce928bc7ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ROBOPath.Robot::ROBOPath.Robot.RaycastScanner
+  sensorOrigin: {fileID: 0}
+  scanInterval: 0.2
+  maxDistance: 30
+  numRays: 36
+  angleSpan: 180
 --- !u!1 &2900729370558606115
 GameObject:
   m_ObjectHideFlags: 0
