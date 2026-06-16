@@ -114,11 +114,14 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
       - EditMode: FeedbackCalculator 3종 + Phase3a 프리팹 검증 2종 + 기본 1종
       - PlayMode: Spawner NavMesh 스냅 / RaycastScanner 발견 / 경로 거부(태그) / 부분 경로 거부 / 플래그 리셋 / 기본 1종
     - (향후 과제) [Phase 3b] 백엔드 그래프 연결 (덤프 맵 데이터 → DB `map_edges` 및 Graph 객체 변환)
-    - (구현 예정) [Phase 3c] `HazardTileController` 구현 — Tile_Hazard 활성/비활성 상태 전환 및 투명화 기능
-      - `Assets/Scripts/Tile/HazardTileController.cs` 신규 작성
+    - [x] [Phase 3c] `HazardTileController` 구현 완료 — Tile_Hazard 활성/비활성 상태 전환 및 투명화 기능
+      - `Assets/Scripts/Tile/HazardTileController.cs` 신규 작성 (ROBOPath.Tile 어셈블리)
       - `startActive = false` 기본값 → 비활성 시 MeshRenderer 비표시, Collider 유지(NavMesh 통행 허용)
+      - Lazy 초기화(`MeshRend` property) — EditMode 테스트 환경 호환
       - `public void SetHazardActive(bool)` API 노출 → Phase 4 WebSocket 연동 시 호출
-      - `Tile_Hazard.prefab`에 컴포넌트 부착
+      - `Tile_Hazard.prefab`에 컴포넌트 부착 완료
+      - EditMode 테스트 4개 추가 (비표시/표시/토글/Collider 유지)
+      - **테스트 현황: EditMode 10/10 + PlayMode 7/7 = 총 17개, Failed 0**
   - [ ] [Phase 4] Unity 내장 WebSocket 서버(`WebSocketServer.cs`) 및 C# Python 브릿지(Supabase 적재) 로직 작성
   - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
