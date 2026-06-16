@@ -17,6 +17,17 @@ namespace ROBOPath.Tile
         private MeshRenderer meshRenderer;
         private bool isActive;
 
+        // Awake가 호출되지 않는 EditMode 테스트 환경에서도 동작하도록 Lazy 초기화
+        private MeshRenderer MeshRend
+        {
+            get
+            {
+                if (meshRenderer == null)
+                    meshRenderer = GetComponent<MeshRenderer>();
+                return meshRenderer;
+            }
+        }
+
         void Awake()
         {
             meshRenderer = GetComponent<MeshRenderer>();
@@ -35,8 +46,9 @@ namespace ROBOPath.Tile
         public void SetHazardActive(bool active)
         {
             isActive = active;
-            if (meshRenderer != null)
-                meshRenderer.enabled = active;
+            var mr = MeshRend;
+            if (mr != null)
+                mr.enabled = active;
         }
 
         /// <summary>현재 활성 상태를 반환한다.</summary>
