@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 from uuid import UUID
 from src.domain.models import Node, BaseLocation, Edge
 from src.application.interfaces import NodeRepository, EdgeRepository
+from src.domain.algorithms.cost_calculator import is_traversable
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,8 @@ class MapImportService:
                 y=pos["y"],
                 z=pos["z"],
                 name=f"Station_{node_id[:8]}",
-                location_usage=n.get("location_usage", "Station")
+                location_usage=n.get("location_usage", "Station"),
+                terrain_tag=n.get("tag", "Node_Destination")
             )
             node_models.append(base_loc)
             node_dict[node_id] = base_loc
@@ -74,7 +76,8 @@ class MapImportService:
                 x=pos["x"],
                 y=pos["y"],
                 z=pos["z"],
-                node_type="BASE"
+                node_type="BASE",
+                terrain_tag=t.get("terrain_type", "Terrain_Flat")
             )
             node_models.append(node)
             node_dict[tile_id] = node
@@ -95,6 +98,11 @@ class MapImportService:
                 if to_id not in node_dict:
                     continue
                     
+                # 중복 검사
+                if (from_id, to_id) in edge_set:
+                    continue
+                edge_set.add((from_id, to_id))
+                    
                 to_node = node_dict[to_id]
                 
                 # 거리 계산
@@ -105,15 +113,71 @@ class MapImportService:
                 if dist <= 0.0:
                     dist = 0.1 # 최소 거리 보장
                     
-                # Edge 중복 검사
-                # from-to 방향 쌍이 중복되지 않도록 방어 코드 추가 가능하지만, 
-                # 방향성이 있는 그래프라면 그대로 추가
                 edge_models.append(Edge(
                     from_node_id=from_node.id,
                     to_node_id=to_node.id,
                     distance_m=dist,
                     platform_stats={}
                 ))
+
+        # 2-1. 고립된 거점(STATION) 연결 로직
+        # 거점은 10m 단위 그리드 위에 존재하므로, 같은 셀 (dx<=5, dz<=5) 내의 통행 가능한(평지) 타일과 양방향 연결한다.
+        # 같은 셀 내에 통행 가능 타일이 없으면 가장 가까운 통행 가능 타일과 연결한다.
+        station_nodes = [n for n in node_models if isinstance(n, BaseLocation)]
+        tile_nodes = [n for n in node_models if not isinstance(n, BaseLocation)]
+
+        for station in station_nodes:
+            station_id_str = str(station.id)
+            # 통과 가능한 타일들
+            traversable_tiles = [t for t in tile_nodes if is_traversable(t.terrain_tag, None, {})]
+            if not traversable_tiles:
+                continue
+            
+            # 같은 셀 내의 타일 탐색 (dx <= 5, dz <= 5)
+            # 타일의 중심과 거점의 중심이 같은 셀에 있으면 dx, dz가 5 이하임 (10m 그리드)
+            nearby_tiles = []
+            min_dist = float('inf')
+            closest_tile = None
+
+            for t in traversable_tiles:
+                dx = t.x - station.x
+                dy = t.y - station.y
+                dz = t.z - station.z
+                dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_tile = t
+
+                if abs(dx) <= 5.1 and abs(dz) <= 5.1:
+                    nearby_tiles.append((t, dist))
+
+            # 같은 셀에 있는 타일들에 모두 연결, 없으면 가장 가까운 하나의 타일에 연결
+            tiles_to_connect = nearby_tiles if nearby_tiles else [(closest_tile, min_dist)]
+
+            for t, dist in tiles_to_connect:
+                t_id_str = str(t.id)
+                if dist <= 0.0:
+                    dist = 0.1
+                
+                # 거점 -> 타일
+                if (station_id_str, t_id_str) not in edge_set:
+                    edge_set.add((station_id_str, t_id_str))
+                    edge_models.append(Edge(
+                        from_node_id=station.id,
+                        to_node_id=t.id,
+                        distance_m=dist,
+                        platform_stats={}
+                    ))
+                # 타일 -> 거점
+                if (t_id_str, station_id_str) not in edge_set:
+                    edge_set.add((t_id_str, station_id_str))
+                    edge_models.append(Edge(
+                        from_node_id=t.id,
+                        to_node_id=station.id,
+                        distance_m=dist,
+                        platform_stats={}
+                    ))
 
         # 3. DB Upsert
         if node_models:

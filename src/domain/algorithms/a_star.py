@@ -7,7 +7,7 @@ from uuid import UUID
 from src.domain.models.node import Node
 from src.domain.models.edge import Edge, PlatformStat
 from src.domain.models.metadata import Robot
-from src.domain.algorithms.cost_calculator import calculate_edge_cost
+from src.domain.algorithms.cost_calculator import calculate_edge_cost, resolve_cost_multiplier, is_traversable
 
 def heuristic(node_a: Node, node_b: Node) -> float:
     """두 노드 간의 3차원 유클리디안 거리를 활용한 휴리스틱 함수"""
@@ -21,6 +21,9 @@ def build_graph(nodes: List[Node], edges: List[Edge], robot: Robot) -> Dict[UUID
     
     platform = robot.platform
     weights = robot.weight_profile
+    cost_profiles = weights.get("cost_profiles", {})
+    
+    node_map = {node.id: node for node in nodes}
     
     for edge in edges:
         # edge에 연결된 노드가 node 리스트에 없는 경우 예외 처리
@@ -35,9 +38,15 @@ def build_graph(nodes: List[Node], edges: List[Edge], robot: Robot) -> Dict[UUID
             stats = PlatformStat(**raw_stats)
         else:
             stats = raw_stats
+            
+        target_node = node_map[edge.to_node_id]
         
-        # TODO: 향후 resolve_cost_multiplier를 연동하여 타일/지형별 cost_multiplier를 calculate_edge_cost에 주입해야 함
-        cost = calculate_edge_cost(edge.distance_m, stats, weights)
+        # 하드 차단: 목적지 노드의 지형이 통행 불가인 경우 엣지 추가 안 함
+        if not is_traversable(target_node.terrain_tag, None, cost_profiles):
+            continue
+            
+        multiplier = resolve_cost_multiplier(target_node.terrain_tag, None, cost_profiles)
+        cost = calculate_edge_cost(edge.distance_m, stats, weights, cost_multiplier=multiplier)
         
         # 양방향 주행 가능 그래프로 구성
         graph[edge.from_node_id][edge.to_node_id] = cost

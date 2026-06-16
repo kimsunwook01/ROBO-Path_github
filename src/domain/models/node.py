@@ -14,6 +14,7 @@ class Node(BaseModel):
     z: float
     # node_type은 BASE 또는 DISCOVERED만 허용
     node_type: str = Field(..., pattern="^(BASE|DISCOVERED)$")
+    terrain_tag: Optional[str] = Field(default=None, max_length=50)
     version_added: str = Field(default="v1.0.0", max_length=20)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 

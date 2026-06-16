@@ -26,7 +26,7 @@ def dummy_scene_dump():
         "nodes": [
             {
                 "id": "11111111-1111-1111-1111-111111111111",
-                "type": "STATION",
+                "tag": "Node_Destination",
                 "position": {"x": 0.0, "y": 0.0, "z": 0.0},
                 "location_usage": "TestStation"
             }
@@ -34,14 +34,19 @@ def dummy_scene_dump():
         "tiles": [
             {
                 "id": "22222222-2222-2222-2222-222222222222",
-                "type": "Path_Flat",
+                "terrain_type": "Path_Flat",
                 "position": {"x": 3.0, "y": 0.0, "z": 4.0}
+            },
+            {
+                "id": "33333333-3333-3333-3333-333333333333",
+                "terrain_type": "Path_Stair",
+                "position": {"x": -3.0, "y": 0.0, "z": -4.0}
             }
         ],
         "adjacency": [
             {
-                "id": "11111111-1111-1111-1111-111111111111",
-                "adjacent_to": ["22222222-2222-2222-2222-222222222222"]
+                "id": "22222222-2222-2222-2222-222222222222",
+                "adjacent_to": ["33333333-3333-3333-3333-333333333333"]
             }
         ]
     }
@@ -57,9 +62,14 @@ def test_map_import_service_parsing(mock_node_repo, mock_edge_repo, dummy_scene_
         service = MapImportService(mock_node_repo, mock_edge_repo)
         nodes_count, edges_count = service.import_from_json(temp_path)
 
-        # 검증: 노드 2개(거점1+타일1), 엣지 1개
-        assert nodes_count == 2
-        assert edges_count == 1
+        # 검증: 노드 3개(거점1 + 타일2)
+        assert nodes_count == 3
+        
+        # 엣지 검증: 타일 간 단방향 연결 1개 (222->333) + 거점 연결(양방향).
+        # 거점(0,0,0)은 222와 333 모두 거리가 5이므로, 같은 셀 (dx<=5, dz<=5)에 속해 둘 다 양방향 연결됨.
+        # 따라서 거점->222, 거점->333, 222->거점, 333->거점 (총 4개)
+        # 총 엣지 수: 1 + 4 = 5
+        assert edges_count == 5
 
         # Repository가 제대로 호출되었는지 확인
         mock_node_repo.upsert_nodes.assert_called_once()
@@ -67,19 +77,25 @@ def test_map_import_service_parsing(mock_node_repo, mock_edge_repo, dummy_scene_
 
         # upsert_nodes에 전달된 객체 검증
         upserted_nodes = mock_node_repo.upsert_nodes.call_args[0][0]
-        assert len(upserted_nodes) == 2
+        assert len(upserted_nodes) == 3
         
         station = next(n for n in upserted_nodes if isinstance(n, BaseLocation))
         assert station.location_usage == "TestStation"
-        assert station.x == 0.0
+        assert station.terrain_tag == "Node_Destination"
+        
+        flat_tile = next(n for n in upserted_nodes if str(n.id) == "22222222-2222-2222-2222-222222222222")
+        assert flat_tile.terrain_tag == "Path_Flat"
+
+        stair_tile = next(n for n in upserted_nodes if str(n.id) == "33333333-3333-3333-3333-333333333333")
+        assert stair_tile.terrain_tag == "Path_Stair"
 
         # upsert_edges에 전달된 객체 검증
         upserted_edges = mock_edge_repo.upsert_edges.call_args[0][0]
-        assert len(upserted_edges) == 1
-        edge = upserted_edges[0]
+        assert len(upserted_edges) == 5
         
-        # 3, 4, 0 -> 피타고라스 거리 5.0
-        assert edge.distance_m == 5.0
+        # 거점발 엣지가 존재하는지 (고립 해제)
+        station_edges = [e for e in upserted_edges if e.from_node_id == station.id]
+        assert len(station_edges) == 2 # 222와 333으로 향하는 엣지 2개
 
     finally:
         os.remove(temp_path)

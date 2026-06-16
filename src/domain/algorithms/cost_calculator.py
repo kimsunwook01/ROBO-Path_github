@@ -66,3 +66,32 @@ def resolve_cost_multiplier(terrain_tag: Optional[str], tile_tags: Optional[Unio
                 return float(t_data["cost_multiplier"])
                 
     return 1.0
+
+def is_traversable(terrain_tag: Optional[str], tile_tags: Optional[Union[str, Iterable[str]]], platform_profile: dict) -> bool:
+    """
+    플랫폼(기종)의 프로필을 기반으로 특정 지형이나 타일의 통행 가능 여부를 반환합니다.
+    프로필에 traversable: false 가 명시되어 있으면 False를 반환합니다.
+    정의되지 않은 태그(거점, 미지형 등)는 기본적으로 통행 가능(True)으로 처리합니다.
+    """
+    if tile_tags is not None:
+        if isinstance(tile_tags, str):
+            tiles_to_check = [tile_tags]
+        else:
+            tiles_to_check = tile_tags
+            
+        profile_tiles = platform_profile.get("tiles", {})
+        if isinstance(profile_tiles, dict):
+            for t_tag in tiles_to_check:
+                if t_tag in profile_tiles and isinstance(profile_tiles[t_tag], dict):
+                    if "traversable" in profile_tiles[t_tag]:
+                        return bool(profile_tiles[t_tag]["traversable"])
+                        
+    if terrain_tag is not None:
+        profile_terrains = platform_profile.get("terrains", {})
+        if isinstance(profile_terrains, dict) and terrain_tag in profile_terrains:
+            t_data = profile_terrains[terrain_tag]
+            if isinstance(t_data, dict) and "traversable" in t_data:
+                return bool(t_data["traversable"])
+                
+    return True
+

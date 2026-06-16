@@ -58,16 +58,16 @@ class SupabaseNodeRepository(NodeRepository):
             
             for n in nodes:
                 # 기본 nodes 테이블용 필드
-                n_dict = {
+                node_dicts.append({
                     "id": str(n.id),
                     "x": n.x,
                     "y": n.y,
                     "z": n.z,
                     "node_type": n.node_type,
+                    "terrain_tag": n.terrain_tag,
                     "version_added": n.version_added,
                     "created_at": n.created_at.isoformat()
-                }
-                node_dicts.append(n_dict)
+                })
                 
                 # 자식 테이블용 필드 분류
                 from src.domain.models import BaseLocation, DiscoveredNode
