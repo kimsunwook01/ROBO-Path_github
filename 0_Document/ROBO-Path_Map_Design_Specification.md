@@ -87,7 +87,54 @@
 | `Obstacle` | 벽·구조물 등 기타 장애물 |
 | `Prop_Pole` | 가로등·전봇대·표지판 기둥. 가는 수직 장애물. Raycast 탐색에 걸림 |
 | `Prop_Tree` | 나무. 수관 때문에 부피가 더 큼 |
-| `Tile_Hazard` | 맵에 미리 설치하는 동적 장애물 타일. 시뮬레이션 중 확률적으로 일정 시간 활성화되며, 활성 시 해당 칸의 비용이 매우 높아짐(물 웅덩이, 인파 등 돌발상황). 로봇이 발견 시 서버에 보고하여 다른 로봇이 회피하게 함. 동적 활성화 로직은 향후 구현 예정. |
+| `Tile_Hazard` | 맵에 미리 설치하는 동적 장애물 타일. **활성(Active)/비활성(Inactive) 두 가지 상태**를 가진다. 비활성 시 맵에서 보이지 않으며(MeshRenderer 비활성화), NavMesh 통행은 그대로 허용한다. 활성 시 형광색으로 표시되고 해당 칸의 A* 비용이 극도로 높아진다(물 웅덩이, 인파 등 돌발상황). 로봇이 발견 시 서버에 보고하여 다른 로봇이 회피하게 한다. 활성/비활성 전환은 외부(WebSocket 명령 또는 확률적 타이머)에서 `HazardTileController.SetHazardActive(bool)`를 호출하여 수행한다. 자세한 구현 명세는 3.6절 참조. |
+
+### 3.6 Tile_Hazard 상태 전환 설계 (`HazardTileController`)
+
+#### 설계 목표
+- 비활성 상태에서는 **맵에 보이지 않고** 로봇이 인식하지 않음.
+- 활성 상태에서는 **형광색으로 나타나며** A* 비용이 극도로 높아져 로봇이 우회함.
+- Phase 4 WebSocket 명령 또는 자체 타이머로 외부에서 제어 가능.
+
+#### 컴포넌트 구조 (`Assets/Scripts/Tile/HazardTileController.cs`)
+```csharp
+public class HazardTileController : MonoBehaviour
+{
+    [Header("Initial State")]
+    public bool startActive = false;        // Inspector에서 초기 상태 설정
+
+    private MeshRenderer meshRenderer;     // 시각적 표시 제어
+    private bool isActive;                 // 현재 상태
+
+    void Awake() { meshRenderer = GetComponent<MeshRenderer>(); }
+    void Start() { SetHazardActive(startActive); }
+
+    /// <summary>외부(WebSocket, 타이머)에서 호출하는 상태 전환 API</summary>
+    public void SetHazardActive(bool active)
+    {
+        isActive = active;
+        meshRenderer.enabled = active;     // 비활성 시 비표시
+        // Collider는 항상 유지 (NavMesh 통행 계속 허용)
+    }
+
+    public bool IsActive => isActive;
+}
+```
+
+#### 상태별 동작 요약
+| 상태 | MeshRenderer | Collider | NavMesh 통행 | A* 비용 |
+|------|-------------|---------|------------|--------|
+| **비활성(Inactive)** | 비활성(보이지 않음) | 유지 | 허용 | 기본값 |
+| **활성(Active)** | 활성(형광색 표시) | 유지 | 허용 | 극고(Phase 4 연동) |
+
+#### 구현 단계
+1. **[Phase 3 완료 전]** `HazardTileController.cs` 작성 및 `Tile_Hazard.prefab`에 부착. `startActive = false` 기본값으로 비표시 시작.
+2. **[Phase 4]** WebSocket 수신 시 `SetHazardActive(true/false)` 호출 연결.
+3. **[Phase 4 이후 선택]** 확률적 자동 타이머(`HazardTimer`) 추가 — 시뮬레이션 자체 돌발 이벤트 모드.
+
+#### 제약 사항
+- **NavMesh 재베이크 불필요:** MeshRenderer만 끄므로 물리/NavMesh는 변경되지 않는다. A* 비용은 소프트웨어 레벨에서 제어한다.
+- **Collider 비활성화 금지:** Collider를 끄면 RaycastScanner에서 장애물을 전혀 감지할 수 없게 되어 탐색 로직 오작동 가능성이 있다.
 
 ---
 
