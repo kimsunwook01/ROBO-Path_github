@@ -74,3 +74,7 @@ dist/
 
 # Ignore ProBuilder Settings
 Unity/ROBO-Path-Simulator/ProjectSettings/Packages/com.unity.probuilder/Settings.json
+
+# 9. 저장소 루트 스크래치/로그 오염 방지
+EditorLog*.txt
+/test*.cs
