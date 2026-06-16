@@ -163,7 +163,7 @@ public class Phase3aSetup
 
     private static void RebakeMainScene()
     {
-        string scenePath = "Assets/Scenes/CampusMainMap/CampusMainMap.unity";
+        string scenePath = "Assets/Scenes/CampusMainMap.unity";
         var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
         
         // Modify default NavMesh build settings if possible, 

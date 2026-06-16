@@ -14,7 +14,7 @@ namespace ROBOPath.Tests.PlayMode
         public IEnumerator Setup()
         {
             // Load CampusMainMap
-            EditorSceneManager.LoadSceneInPlayMode("Assets/Scenes/CampusMainMap/CampusMainMap.unity", new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
+            EditorSceneManager.LoadSceneInPlayMode("Assets/Scenes/CampusMainMap.unity", new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
             yield return null; // wait one frame
         }
 
