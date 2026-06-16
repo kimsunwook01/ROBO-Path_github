@@ -846,8 +846,8 @@
             "elevation": 2.0
         },
         {
-            "id": "Flat_2_x2_z-1_y1_r0",
-            "name": "Flat_2",
+            "id": "Flat_2_NavMeshBlock_x2_z-1_y1_r0",
+            "name": "Flat_2_NavMeshBlock",
             "tag": "Terrain_Flat",
             "position": {
                 "x": 25.0,
@@ -58861,7 +58861,7 @@
                 "Flat_2_x0_z-1_y1_r0",
                 "Flat_2_x1_z-2_y1_r0",
                 "Flat_2_x1_z0_y1_r0",
-                "Flat_2_x2_z-1_y1_r0"
+                "Flat_2_NavMeshBlock_x2_z-1_y1_r0"
             ]
         },
         {
@@ -58896,12 +58896,12 @@
             "adjacent_to": [
                 "Flat_2_x1_z0_y1_r0",
                 "Flat_2_x2_z1_y1_r0",
-                "Flat_2_x2_z-1_y1_r0",
+                "Flat_2_NavMeshBlock_x2_z-1_y1_r0",
                 "Flat_2_x3_z0_y1_r0"
             ]
         },
         {
-            "id": "Flat_2_x2_z-1_y1_r0",
+            "id": "Flat_2_NavMeshBlock_x2_z-1_y1_r0",
             "adjacent_to": [
                 "Flat_2_x1_z-1_y1_r0",
                 "Flat_2_x2_z0_y1_r0",
@@ -58913,7 +58913,7 @@
             "id": "Flat_2_x2_z-2_y1_r0",
             "adjacent_to": [
                 "Flat_2_x1_z-2_y1_r0",
-                "Flat_2_x2_z-1_y1_r0",
+                "Flat_2_NavMeshBlock_x2_z-1_y1_r0",
                 "Flat_2_x2_z-3_y1_r0",
                 "Flat_2_x3_z-2_y1_r0"
             ]
@@ -58968,7 +58968,7 @@
         {
             "id": "Flat_2_x3_z-1_y1_r0",
             "adjacent_to": [
-                "Flat_2_x2_z-1_y1_r0",
+                "Flat_2_NavMeshBlock_x2_z-1_y1_r0",
                 "Flat_2_x3_z-2_y1_r0",
                 "Flat_2_x3_z0_y1_r0",
                 "Flat_2_x4_z-1_y1_r0"
