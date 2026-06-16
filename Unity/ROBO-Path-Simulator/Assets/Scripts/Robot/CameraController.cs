@@ -46,20 +46,25 @@ namespace ROBOPath.Robot
             }
         }
 
+        private bool isCursorLocked = true;
+
         void LateUpdate()
         {
+            // 에디터에서 Esc가 자체 커서 해제 단축키로 동작하기도 하므로 상태를 안정적으로 유지하기 위해 플래그 사용
             if (Input.GetKeyDown(KeyCode.Escape))
             {
-                if (Cursor.lockState == CursorLockMode.Locked)
-                {
-                    Cursor.lockState = CursorLockMode.None;
-                    Cursor.visible = true;
-                }
-                else
-                {
-                    Cursor.lockState = CursorLockMode.Locked;
-                    Cursor.visible = false;
-                }
+                isCursorLocked = !isCursorLocked;
+            }
+
+            if (isCursorLocked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
 
             if (Input.GetKeyDown(KeyCode.Tab))
