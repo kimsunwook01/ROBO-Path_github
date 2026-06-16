@@ -73,14 +73,14 @@ class SupabaseNodeRepository(NodeRepository):
                 from src.domain.models import BaseLocation, DiscoveredNode
                 if isinstance(n, BaseLocation):
                     base_dicts.append({
-                        "id": str(n.id),
+                        "node_id": str(n.id),  # 스키마 상 node_id
                         "name": n.name,
                         "priority": n.priority,
                         "location_usage": n.location_usage
                     })
                 elif isinstance(n, DiscoveredNode):
                     discovered_dicts.append({
-                        "id": str(n.id),
+                        "node_id": str(n.id),  # 스키마 상 node_id
                         "confidence_score": n.confidence_score,
                         "visit_count": n.visit_count,
                         "is_verified": n.is_verified,
