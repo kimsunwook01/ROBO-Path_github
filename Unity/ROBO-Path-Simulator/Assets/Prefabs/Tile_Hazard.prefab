@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 888071272069432387}
   - component: {fileID: 4881137411449882908}
   - component: {fileID: 5877244053444195262}
+  - component: {fileID: 8536057604691333601}
   m_Layer: 0
   m_Name: Tile_Hazard
   m_TagString: Tile_Hazard
@@ -112,3 +113,16 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8536057604691333601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2206972018303982977}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9850a9c2eb9a3ee4188140a7ce6d5b64, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ROBOPath.Tile::ROBOPath.Tile.HazardTileController
+  startActive: 0
