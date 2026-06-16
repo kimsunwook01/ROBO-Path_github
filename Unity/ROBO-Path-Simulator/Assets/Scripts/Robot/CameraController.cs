@@ -48,6 +48,15 @@ namespace ROBOPath.Robot
 
         private bool isCursorLocked = true;
 
+        void OnApplicationFocus(bool hasFocus)
+        {
+            if (hasFocus && isCursorLocked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
+
         void Update()
         {
             // 에디터 환경: Esc를 누르면 커서 잠금 해제, 화면 클릭 시 다시 잠금 (표준 FPS 방식)
@@ -60,6 +69,13 @@ namespace ROBOPath.Robot
             else if (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1))
             {
                 isCursorLocked = true;
+            }
+
+            // 에디터 포커스 변화 등으로 잠금이 풀리는 현상 방지를 위해 매 프레임 재적용
+            // (참고: 에디터 Play에선 Game 뷰를 한 번 클릭해야 잠금이 완전 적용되며,
+            // 마우스가 에디터 밖으로 나가면 보이는 것은 에디터의 특성. 실제 빌드에선 발생하지 않음)
+            if (isCursorLocked)
+            {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
