@@ -81,12 +81,18 @@ class MissionAssignmentService:
         created_mission = self.mission_repo.create_mission(new_mission)
         self.robot_repo.update_robot_status(robot.id, "Delivery")
 
+        # Unity 노드 ID 생성 공식 반영
+        gx = round((valid_dest.x - 5) / 10)
+        gz = round((valid_dest.z - 5) / 10)
+        y = round(valid_dest.y)
+        dest_node_id = f"Tile_Destination_x{gx}_z{gz}_y{y}_r0"
+
         # Unity로 명령 전송
         bridge = UnityWebSocketBridge()
         asyncio.run(bridge.connect())
         asyncio.run(bridge.assign_mission(
             robot_id=robot_name,
-            dest_node_id=f"Tile_Destination_x{int(valid_dest.x)}_z{int(valid_dest.z)}_y{int(valid_dest.y)}_r0",  # 임시로 유니티의 노드 ID 규칙을 맞춤, 실제 구현시 node id와 매핑
+            dest_node_id=dest_node_id,
             dest_x=valid_dest.x,
             dest_y=valid_dest.y,
             dest_z=valid_dest.z
