@@ -55,7 +55,7 @@ class MapImportService:
                 y=pos["y"],
                 z=pos["z"],
                 name=f"Station_{node_id[:8]}",
-                location_usage=n.get("location_usage", "Station"),
+                location_usage=n.get("usage", "station"),
                 terrain_tag=n.get("tag", "Node_Destination")
             )
             node_models.append(base_loc)
