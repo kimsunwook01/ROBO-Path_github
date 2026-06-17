@@ -56,7 +56,7 @@ public class RobotSpawner : MonoBehaviour
                 index = leggedCount;
             }
             identify.robotId = $"{identify.platform}-{index:D2}";
-            identify.homeStationId = stationNode.name;
+            identify.homeStationId = GenerateNodeId(stationNode);
         }
 
         // Ensure it aligns with NavMesh
@@ -68,5 +68,17 @@ public class RobotSpawner : MonoBehaviour
                 agent.Warp(hit.position);
             }
         }
+    }
+
+    private string GenerateNodeId(GameObject go)
+    {
+        float rotY = go.transform.rotation.eulerAngles.y;
+        int gx = Mathf.RoundToInt((go.transform.position.x - 5f) / 10f);
+        int gz = Mathf.RoundToInt((go.transform.position.z - 5f) / 10f);
+        int y = Mathf.RoundToInt(go.transform.position.y);
+        int r = Mathf.RoundToInt(rotY);
+        r = (r % 360 + 360) % 360;
+        
+        return $"{go.name}_x{gx}_z{gz}_y{y}_r{r}";
     }
 }
