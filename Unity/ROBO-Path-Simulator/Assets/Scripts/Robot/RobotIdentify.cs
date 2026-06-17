@@ -9,4 +9,6 @@ public enum RobotPlatform
 public class RobotIdentify : MonoBehaviour
 {
     public RobotPlatform platform;
+    public string robotId;
+    public string homeStationId;
 }

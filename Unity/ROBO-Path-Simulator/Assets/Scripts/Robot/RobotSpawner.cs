@@ -6,6 +6,9 @@ public class RobotSpawner : MonoBehaviour
     public GameObject wheeledPrefab;
     public GameObject leggedPrefab;
 
+    private int wheeledCount = 0;
+    private int leggedCount = 0;
+
     void Start()
     {
         SpawnRobots();
@@ -13,6 +16,8 @@ public class RobotSpawner : MonoBehaviour
 
     public void SpawnRobots()
     {
+        wheeledCount = 0;
+        leggedCount = 0;
         GameObject[] stations = GameObject.FindGameObjectsWithTag("Node_Station");
         if (stations.Length == 0)
         {
@@ -24,18 +29,36 @@ public class RobotSpawner : MonoBehaviour
         {
             // 교대로 배정 (짝수: Wheeled, 홀수: Legged)
             GameObject prefabToSpawn = (i % 2 == 0) ? wheeledPrefab : leggedPrefab;
-            SpawnAt(prefabToSpawn, stations[i].transform.position);
+            SpawnAt(prefabToSpawn, stations[i]);
         }
     }
 
-    private void SpawnAt(GameObject prefab, Vector3 position)
+    private void SpawnAt(GameObject prefab, GameObject stationNode)
     {
         if (prefab == null) return;
         
         // Spawn slightly above to avoid clipping initially
-        Vector3 spawnPos = position + Vector3.up * 1f;
+        Vector3 spawnPos = stationNode.transform.position + Vector3.up * 1f;
         GameObject robot = Instantiate(prefab, spawnPos, Quaternion.identity);
         
+        RobotIdentify identify = robot.GetComponent<RobotIdentify>();
+        if (identify != null)
+        {
+            int index = 0;
+            if (identify.platform == RobotPlatform.Wheeled)
+            {
+                wheeledCount++;
+                index = wheeledCount;
+            }
+            else
+            {
+                leggedCount++;
+                index = leggedCount;
+            }
+            identify.robotId = $"{identify.platform}-{index:D2}";
+            identify.homeStationId = stationNode.name;
+        }
+
         // Ensure it aligns with NavMesh
         NavMeshAgent agent = robot.GetComponent<NavMeshAgent>();
         if (agent != null)
