@@ -31,8 +31,9 @@ class UnityWebSocketBridge:
             payload = json.dumps(command).encode('utf-8')
             req = urllib.request.Request(self.uri, data=payload, method='POST')
             req.add_header('Content-Type', 'application/json')
+            req.add_header('Connection', 'close')
             
-            # 비동기 환경에서 동기 블로킹 호출이지만, 로컬 통신이므로 임시로 직접 호출
+            # TODO: 비동기 환경에서 동기 블로킹 호출(urlopen)은 이벤트 루프를 블로킹할 수 있으므로, 후속 과제로 aiohttp 또는 asyncio.to_thread()를 사용하여 비동기화해야 함.
             with urllib.request.urlopen(req, timeout=2.0) as response:
                 if response.status == 200:
                     logger.info(f"Sent command to Unity: {payload.decode('utf-8')}")

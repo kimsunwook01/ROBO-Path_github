@@ -10,24 +10,32 @@ from src.application.interfaces.robot_repository import RobotRepository
 
 logger = logging.getLogger(__name__)
 
+import asyncio
+from datetime import datetime
+from src.application.services.path_planning_service import PathPlanningService
+from src.presentation.ros2_bridge.bridge import UnityWebSocketBridge
+
 class MissionAssignmentService:
     def __init__(
         self,
         node_repo: NodeRepository,
         mission_repo: MissionRepository,
-        robot_repo: RobotRepository
+        robot_repo: RobotRepository,
+        path_service: PathPlanningService
     ):
         self.node_repo = node_repo
         self.mission_repo = mission_repo
         self.robot_repo = robot_repo
+        self.path_service = path_service
 
     def assign_next_mission(self, robot_name: str) -> Optional[Mission]:
         """
         로봇에 다음 임무를 할당합니다.
         1. 로봇 존재 및 Idle 상태 확인
-        2. 목적지(BaseLocation) 선정
+        2. 목적지(BaseLocation) 선정 및 경로 검증
         3. Mission 생성 (status="Active")
-        4. 로봇 상태 업데이트 (status="Delivery")
+        4. Unity로 명령 전송
+        5. 로봇 상태 업데이트 (status="Delivery")
         """
         robot = self.robot_repo.get_robot_by_name(robot_name)
         if not robot:
@@ -38,31 +46,54 @@ class MissionAssignmentService:
             logger.info(f"Robot {robot_name} is not Idle (current status: {robot.status}). Skipping assignment.")
             return None
 
-        # 모든 노드 가져오기
         all_nodes = self.node_repo.get_all_nodes()
-        base_locations = [n for n in all_nodes if isinstance(n, BaseLocation) and getattr(n, "location_usage", "") == "Destination"]
+        pickups = [n for n in all_nodes if isinstance(n, BaseLocation) and getattr(n, "terrain_tag", "") == "Node_Pickup"]
+        destinations = [n for n in all_nodes if isinstance(n, BaseLocation) and getattr(n, "terrain_tag", "") == "Node_Destination"]
 
-        if not base_locations:
-            logger.warning("No available Destination base locations found.")
+        if not pickups or not destinations:
+            logger.warning("No available Pickup or Destination nodes found.")
             return None
 
-        # 임의의 목적지 선택 (추후 우선순위 로직 추가 가능)
-        target = random.choice(base_locations)
+        # 무작위 셔플 후 검증
+        pickup = random.choice(pickups)
+        random.shuffle(destinations)
+        
+        valid_dest = None
+        for dest in destinations:
+            path = self.path_service.find_path(pickup.id, dest.id, robot)
+            if path:
+                valid_dest = dest
+                break
+                
+        if not valid_dest:
+            logger.warning(f"No valid path found for robot {robot_name} to any destination.")
+            return None
 
-        # Mission 생성
         new_mission = Mission(
             robot_id=robot.id,
             mission_type="Delivery",
             status="Active",
-            to_node_id=target.id
+            from_node_id=pickup.id,
+            to_node_id=valid_dest.id,
+            started_at=datetime.utcnow()
         )
         
         created_mission = self.mission_repo.create_mission(new_mission)
-        
-        # 로봇 상태 업데이트
         self.robot_repo.update_robot_status(robot.id, "Delivery")
 
-        logger.info(f"Assigned mission {created_mission.id} to robot {robot_name} (Destination: {target.name})")
+        # Unity로 명령 전송
+        bridge = UnityWebSocketBridge()
+        asyncio.run(bridge.connect())
+        asyncio.run(bridge.assign_mission(
+            robot_id=robot_name,
+            dest_node_id=f"Tile_Destination_x{int(valid_dest.x)}_z{int(valid_dest.z)}_y{int(valid_dest.y)}_r0",  # 임시로 유니티의 노드 ID 규칙을 맞춤, 실제 구현시 node id와 매핑
+            dest_x=valid_dest.x,
+            dest_y=valid_dest.y,
+            dest_z=valid_dest.z
+        ))
+        asyncio.run(bridge.disconnect())
+
+        logger.info(f"Assigned mission {created_mission.id} to robot {robot_name} (From: {pickup.name}, To: {valid_dest.name})")
         return created_mission
 
     def cancel_mission(self, mission_id: UUID) -> bool:

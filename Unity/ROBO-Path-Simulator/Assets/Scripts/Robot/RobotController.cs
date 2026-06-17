@@ -158,9 +158,6 @@ namespace ROBOPath.Robot
                     if (Physics.Raycast(samplePoint, Vector3.down, out RaycastHit hit, 2f))
                     {
                         if (hit.collider.CompareTag("Path_Stair")) return false;
-
-                        float angle = Vector3.Angle(Vector3.up, hit.normal);
-                        if (angle > 15.0f) return false;
                     }
                 }
             }

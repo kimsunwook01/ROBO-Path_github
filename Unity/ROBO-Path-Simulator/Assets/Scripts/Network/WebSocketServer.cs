@@ -49,8 +49,15 @@ namespace ROBOPath.Network
                 port = parsedPort;
             }
 
+            string host = Environment.GetEnvironmentVariable("SIMULATOR_HOST");
+            if (string.IsNullOrEmpty(host))
+            {
+                host = "127.0.0.1";
+            }
+
             cancellationTokenSource = new CancellationTokenSource();
-            string uri = $"http://127.0.0.1:{port}/";
+            // 개발 환경(localhost) 임시값 — Mac Mini 배포 전 SIMULATOR_HOST 기반 와일드카드 바인딩으로 되돌려야 함
+            string uri = $"http://{host}:{port}/";
             StartServer(uri);
         }
 
