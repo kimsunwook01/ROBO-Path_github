@@ -48,8 +48,18 @@ class SupabaseEdgeRepository(EdgeRepository):
 
     def get_all_edges(self) -> List[Edge]:
         try:
-            response = self.db.table("map_edges").select("*").execute()
-            return [Edge(**item) for item in response.data]
+            all_data = []
+            page_size = 1000
+            offset = 0
+            while True:
+                response = self.db.table("map_edges").select("*").range(offset, offset + page_size - 1).execute()
+                if not response.data:
+                    break
+                all_data.extend(response.data)
+                if len(response.data) < page_size:
+                    break
+                offset += page_size
+            return [Edge(**item) for item in all_data]
         except Exception as e:
             logger.error(f"Error fetching all edges: {e}", exc_info=True)
             return []

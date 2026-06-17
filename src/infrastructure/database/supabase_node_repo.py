@@ -13,7 +13,7 @@ class SupabaseNodeRepository(NodeRepository):
     def _map_to_node_model(self, data: dict) -> Node:
         # DB 테이블에 저장된 데이터를 가져와 알맞은 Node 자식 객체로 변환
         node_type = data.get("node_type")
-        if node_type == "BASE":
+        if node_type == "BASE" and "name" in data and data["name"] is not None:
             # base_locations 테이블과 조인된 결과일 수도 있고, 여기서 단순화 처리
             return BaseLocation(**data)
         elif node_type == "DISCOVERED":
@@ -37,14 +37,20 @@ class SupabaseNodeRepository(NodeRepository):
 
     def get_all_nodes(self) -> List[Node]:
         try:
-            response = self.db.table("nodes").select("*").execute()
-            return [self._map_to_node_model(item) for item in response.data]
+            all_data = []
+            page_size = 1000
+            offset = 0
+            while True:
+                response = self.db.table("nodes").select("*").range(offset, offset + page_size - 1).execute()
+                if not response.data:
+                    break
+                all_data.extend(response.data)
+                if len(response.data) < page_size:
+                    break
+                offset += page_size
+            return [self._map_to_node_model(item) for item in all_data]
         except Exception as e:
-            error_msg = str(e).lower()
-            if "connection" in error_msg or "timeout" in error_msg or "network" in error_msg:
-                logger.error(f"Network/Connection error fetching all nodes: {e}", exc_info=True)
-            else:
-                logger.error(f"Data/Parsing error fetching all nodes: {e}", exc_info=True)
+            logger.error(f"Error fetching all nodes: {e}", exc_info=True)
             return []
 
     def upsert_nodes(self, nodes: List[Node]) -> bool:

@@ -47,8 +47,10 @@ class MissionAssignmentService:
             return None
 
         all_nodes = self.node_repo.get_all_nodes()
-        pickups = [n for n in all_nodes if isinstance(n, BaseLocation) and getattr(n, "terrain_tag", "") == "Node_Pickup"]
-        destinations = [n for n in all_nodes if isinstance(n, BaseLocation) and getattr(n, "terrain_tag", "") == "Node_Destination"]
+        pickups = [n for n in all_nodes if getattr(n, "terrain_tag", "") == "Node_Pickup"]
+        destinations = [n for n in all_nodes if getattr(n, "terrain_tag", "") == "Node_Destination"]
+        
+        logger.info(f"Found {len(pickups)} Pickups and {len(destinations)} Destinations from {len(all_nodes)} total nodes.")
 
         if not pickups or not destinations:
             logger.warning("No available Pickup or Destination nodes found.")
@@ -99,7 +101,9 @@ class MissionAssignmentService:
         ))
         asyncio.run(bridge.disconnect())
 
-        logger.info(f"Assigned mission {created_mission.id} to robot {robot_name} (From: {pickup.name}, To: {valid_dest.name})")
+        pickup_name = getattr(pickup, "name", str(pickup.id))
+        dest_name = getattr(valid_dest, "name", str(valid_dest.id))
+        logger.info(f"Assigned mission {created_mission.id} to robot {robot_name} (From: {pickup_name}, To: {dest_name})")
         return created_mission
 
     def cancel_mission(self, mission_id: UUID) -> bool:
