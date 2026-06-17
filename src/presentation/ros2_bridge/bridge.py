@@ -83,8 +83,8 @@ if __name__ == "__main__":
         await asyncio.sleep(1)
         await bridge.assign_mission(
             robot_id="Wheeled-01",
-            dest_node_id="Tile_Destination_x1_z26_y32_r0",
-            dest_x=15.0, dest_y=32.25, dest_z=265.0
+            dest_node_id="Tile_Destination_x0_z-21_y2_r0",
+            dest_x=5.0, dest_y=2.25, dest_z=-205.0
         )
         
         await bridge.disconnect()
