@@ -99,7 +99,7 @@ namespace ROBOPath.Network
                         CreateNoWindow = true,
                         // 환경변수 PYTHONPATH="." 적용 효과를 위해 WorkingDirectory를 설정하거나,
                         // 실행 시점에서 루트 디렉토리 기준이라고 가정
-                        WorkingDirectory = Path.GetFullPath(Path.Combine(Application.dataPath, "../../")) // ROBO-Path_project root
+                        WorkingDirectory = Path.GetFullPath(Path.Combine(Application.dataPath, "../../../")) // ROBO-Path_project root
                     };
 
                     using (Process process = Process.Start(psi))

@@ -48,19 +48,18 @@ def main():
     # Create MissionLog domain model
     mission_log = MissionLog(
         id=uuid4(),
-        robot_id=platform, # Simplified for now
-        start_node_id=from_node_id,
-        end_node_id=to_node_id,
-        status="completed",
-        started_at=datetime.now(timezone.utc),
-        completed_at=datetime.now(timezone.utc),
-        metrics={"L": load, "S": stability, "E": efficiency}
+        robot_id=None, # FK 제약조건 회피를 위해 None 처리
+        operating_mode="Task",
+        load_factor=load,
+        stability_index=stability,
+        efficiency_index=efficiency,
+        created_at=datetime.utcnow()
     )
     
     # 1. 엣지 매핑 시도
     edge = edge_repo.get_edge_by_nodes(from_node_id, to_node_id)
     if edge:
-        robot = Robot(id=platform, platform=platform, weight_profile_id="default")
+        robot = Robot(name="dummy_robot", platform=platform)
         try:
             agg_service.process_new_log(edge.id, robot, mission_log)
             logger.info(f"Successfully updated platform_stats for edge {edge.id}")
@@ -73,13 +72,13 @@ def main():
     try:
         log_dict = {
             "id": str(mission_log.id),
-            "robot_id": mission_log.robot_id,
-            "start_node_id": mission_log.start_node_id,
-            "end_node_id": mission_log.end_node_id,
-            "status": mission_log.status,
-            "started_at": mission_log.started_at.isoformat(),
-            "completed_at": mission_log.completed_at.isoformat(),
-            "metrics": mission_log.metrics
+            "robot_id": None,
+            "operating_mode": mission_log.operating_mode,
+            "load_factor": mission_log.load_factor,
+            "stability_index": mission_log.stability_index,
+            "efficiency_index": mission_log.efficiency_index,
+            "profile_version": mission_log.profile_version,
+            "created_at": mission_log.created_at.isoformat()
         }
         db_client.table("mission_logs").insert(log_dict).execute()
         logger.info(f"Inserted mission_log {mission_log.id} successfully.")
