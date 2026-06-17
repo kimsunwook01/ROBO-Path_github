@@ -40,17 +40,19 @@ def build_graph(nodes: List[Node], edges: List[Edge], robot: Robot) -> Dict[UUID
             stats = raw_stats
             
         target_node = node_map[edge.to_node_id]
+        from_node = node_map[edge.from_node_id]
         
-        # 하드 차단: 목적지 노드의 지형이 통행 불가인 경우 엣지 추가 안 함
-        if not is_traversable(target_node.terrain_tag, None, cost_profiles):
-            continue
+        # 1. from_node -> to_node 방향 평가 (목적지: target_node)
+        if is_traversable(target_node.terrain_tag, None, cost_profiles):
+            multiplier_to = resolve_cost_multiplier(target_node.terrain_tag, None, cost_profiles)
+            cost_to = calculate_edge_cost(edge.distance_m, stats, weights, cost_multiplier=multiplier_to)
+            graph[edge.from_node_id][edge.to_node_id] = cost_to
             
-        multiplier = resolve_cost_multiplier(target_node.terrain_tag, None, cost_profiles)
-        cost = calculate_edge_cost(edge.distance_m, stats, weights, cost_multiplier=multiplier)
-        
-        # 양방향 주행 가능 그래프로 구성
-        graph[edge.from_node_id][edge.to_node_id] = cost
-        graph[edge.to_node_id][edge.from_node_id] = cost
+        # 2. to_node -> from_node 방향 평가 (목적지: from_node)
+        if is_traversable(from_node.terrain_tag, None, cost_profiles):
+            multiplier_from = resolve_cost_multiplier(from_node.terrain_tag, None, cost_profiles)
+            cost_from = calculate_edge_cost(edge.distance_m, stats, weights, cost_multiplier=multiplier_from)
+            graph[edge.to_node_id][edge.from_node_id] = cost_from
         
     return graph
 

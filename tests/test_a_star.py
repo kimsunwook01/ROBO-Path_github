@@ -1,6 +1,6 @@
 import pytest
 import uuid
-from src.domain.algorithms.a_star import a_star_search
+from src.domain.algorithms.a_star import a_star_search, build_graph
 from src.domain.models.node import Node
 from src.domain.models.edge import Edge, PlatformStat
 from src.domain.models.metadata import Robot
@@ -131,3 +131,53 @@ def test_hard_blocking_by_terrain():
     
     path_legged = a_star_search(n1, n3, nodes, edges, legged_robot)
     assert path_legged == [n1.id, n2.id, n3.id] # 보행형은 통과
+
+def test_graph_directional_blocking():
+    """역방향 엣지 생성 시 대칭으로 인한 차단 누수(재생성) 결함을 검증한다."""
+    n1 = create_node(0, 0, 0, "Path_Flat")
+    n2 = create_node(10, 0, 0, "Path_Stair") # 휠 로봇 진입 불가
+    n3 = Node(id=uuid.uuid4(), x=0, y=0, z=0, node_type="BASE", terrain_tag="Node_Destination") # 거점 (항상 진입 가능)
+    
+    nodes = [n1, n2, n3]
+    
+    # 평지 <-> 계단, 평지 <-> 거점
+    e1 = Edge(id=uuid.uuid4(), from_node_id=n1.id, to_node_id=n2.id, distance_m=10.0, platform_stats={})
+    e2 = Edge(id=uuid.uuid4(), from_node_id=n1.id, to_node_id=n3.id, distance_m=10.0, platform_stats={})
+    edges = [e1, e2]
+    
+    wheeled_profile = {
+        "cost_profiles": {
+            "terrains": {
+                "Path_Stair": {"traversable": False, "cost_multiplier": 5.0}
+            }
+        }
+    }
+    wheeled_robot = Robot(id=uuid.uuid4(), name="WheelBot", platform="wheeled", weight_profile=wheeled_profile)
+    
+    legged_profile = {
+        "cost_profiles": {
+            "terrains": {
+                "Path_Stair": {"traversable": True, "cost_multiplier": 1.5}
+            }
+        }
+    }
+    legged_robot = Robot(id=uuid.uuid4(), name="LegBot", platform="legged", weight_profile=legged_profile)
+    
+    graph_wheeled = build_graph(nodes, edges, wheeled_robot)
+    graph_legged = build_graph(nodes, edges, legged_robot)
+    
+    # 휠 로봇: 계단(n2)으로 진입하는 엣지 수 == 0
+    # 모든 노드에서 n2.id를 목적지로 하는 엣지를 찾는다
+    entering_n2_wheeled = sum(1 for from_id, to_dict in graph_wheeled.items() if n2.id in to_dict)
+    assert entering_n2_wheeled == 0
+    
+    # 반면 계단(n2)에서 평지(n1)로 나오는 엣지는 존재해야 함 (만약 로봇이 모종의 이유로 계단에 있다면 평지로는 탈출 가능해야 함)
+    assert n1.id in graph_wheeled[n2.id]
+    
+    # 보행 로봇: 계단(n2)으로 진입 가능
+    entering_n2_legged = sum(1 for from_id, to_dict in graph_legged.items() if n2.id in to_dict)
+    assert entering_n2_legged > 0
+    
+    # 휠 로봇: 거점(n3)은 고립되지 않고 평지(n1)에서 진입 가능해야 함
+    entering_n3_wheeled = sum(1 for from_id, to_dict in graph_wheeled.items() if n3.id in to_dict)
+    assert entering_n3_wheeled > 0
