@@ -41,3 +41,28 @@ class SupabaseRobotRepository(RobotRepository):
         except Exception as e:
             logger.error(f"Error updating robot status {robot_id}: {e}", exc_info=True)
             return False
+
+    def update_robot_telemetry(self, robot_id: UUID, status: str = None,
+                               battery_pct: float = None,
+                               current_speed_mps: float = None) -> bool:
+        """
+        로봇의 상태/배터리/속도를 한 번에 갱신한다. None인 필드는 제외.
+        """
+        payload = {}
+        if status is not None:
+            payload["status"] = status
+        if battery_pct is not None:
+            # 0~100 범위로 클램프
+            payload["battery_pct"] = max(0.0, min(100.0, battery_pct))
+        if current_speed_mps is not None:
+            payload["current_speed_mps"] = current_speed_mps
+
+        if not payload:
+            return True  # 갱신할 게 없으면 성공 처리
+
+        try:
+            response = self.db.table("robots").update(payload).eq("id", str(robot_id)).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error updating robot telemetry {robot_id}: {e}", exc_info=True)
+            return False

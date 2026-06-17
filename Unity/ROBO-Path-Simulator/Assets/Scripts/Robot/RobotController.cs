@@ -24,6 +24,15 @@ namespace ROBOPath.Robot
         public float waypointArrivalRadius = 8.0f;
         public float finalArrivalRadius = 8.0f;
 
+        [Header("Battery (Spec B)")]
+        public float batteryPct = 100f;
+        private const float MAX_BATTERY = 100f;
+        private const float CHARGE_RATE_PER_SEC = 5f;       // Node_Station 정차 시 초당 충전량
+        private const float DRAIN_FLAT = 0.02f;             // 평지 1m당 소모
+        private const float DRAIN_SLOPE = 0.05f;            // 경사/램프 1m당 소모
+        private const float DRAIN_STAIR = 0.08f;            // 계단 1m당 소모
+        private Vector3 lastBatteryCheckPos;               // 이동거리 누적용 이전 위치
+
         private string fromNodeId = "BASE";
         private string toNodeId = "unknown";
 
@@ -44,6 +53,8 @@ namespace ROBOPath.Robot
             // 여기서 코드 값으로 강제 재설정한다 (Inspector를 직접 안 만져도 적용됨).
             waypointArrivalRadius = 8.0f;
             finalArrivalRadius = 8.0f;
+
+            lastBatteryCheckPos = transform.position;
         }
 
         void Update()
@@ -56,6 +67,62 @@ namespace ROBOPath.Robot
             {
                 CheckWaypointReached();
             }
+
+            // 배터리 시뮬레이션은 모드와 무관하게 매 프레임 갱신
+            UpdateBattery();
+        }
+
+        /// <summary>
+        /// Spec B 배터리 간이 모델.
+        /// - 이동 중: 이동거리 × 지형별 drain 만큼 차감
+        /// - Node_Station 위 정차 중: 충전
+        /// </summary>
+        private void UpdateBattery()
+        {
+            float moved = Vector3.Distance(transform.position, lastBatteryCheckPos);
+            lastBatteryCheckPos = transform.position;
+
+            bool isMoving = agent.velocity.sqrMagnitude > 0.01f;
+
+            if (isMoving && moved > 0f)
+            {
+                // 현재 밟고 있는 지형 태그로 drain율 결정
+                float drainRate = DRAIN_FLAT;
+                string tag = GetTerrainTagBelow();
+                if (tag == "Path_Stair") drainRate = DRAIN_STAIR;
+                else if (tag == "Terrain_Slope" || tag == "Path_Ramp") drainRate = DRAIN_SLOPE;
+
+                batteryPct -= moved * drainRate;
+                if (batteryPct < 0f) batteryPct = 0f;
+            }
+            else
+            {
+                // 정차 중 + Node_Station 위면 충전
+                if (IsOnStation())
+                {
+                    batteryPct += CHARGE_RATE_PER_SEC * Time.deltaTime;
+                    if (batteryPct > MAX_BATTERY) batteryPct = MAX_BATTERY;
+                }
+            }
+        }
+
+        private string GetTerrainTagBelow()
+        {
+            if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
+            {
+                if (!string.IsNullOrEmpty(hit.collider.tag) && hit.collider.tag != "Untagged")
+                    return hit.collider.tag;
+            }
+            return "Terrain_Flat";
+        }
+
+        private bool IsOnStation()
+        {
+            if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
+            {
+                return hit.collider.CompareTag("Node_Station");
+            }
+            return false;
         }
 
         public void ToggleMode()
@@ -192,8 +259,8 @@ namespace ROBOPath.Robot
                         }
 
                         FeedbackMetrics metrics = FeedbackCalculator.ComputeMetrics(identify.platform, terrainTag);
-                        Debug.Log($"[RobotController] {identify.robotId}: emitting FEEDBACK (terrain={terrainTag}, L={metrics.L}, S={metrics.S}, E={metrics.E})");
-                        telemetrySink.EmitFeedback(identify.platform, fromNodeId, finalDestNodeId, metrics.L, metrics.S, metrics.E);
+                        Debug.Log($"[RobotController] {identify.robotId}: emitting FEEDBACK (terrain={terrainTag}, L={metrics.L}, S={metrics.S}, E={metrics.E}, battery={batteryPct:F1}%)");
+                        telemetrySink.EmitFeedback(identify.platform, fromNodeId, finalDestNodeId, metrics.L, metrics.S, metrics.E, batteryPct);
                         fromNodeId = finalDestNodeId;
                     }
                     else

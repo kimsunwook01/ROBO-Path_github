@@ -50,6 +50,7 @@ def main():
     load = fb.get("L")
     stability = fb.get("S")
     efficiency = fb.get("E")
+    battery_pct = fb.get("battery_pct")  # Unity가 현재 배터리를 실어 보냄 (없으면 None)
     
     if not (from_node_id_raw and to_node_id_raw and platform and load is not None and stability is not None and efficiency is not None):
         logger.error(f"Missing required fields in feedback data: {fb}")
@@ -109,15 +110,21 @@ def main():
         # mission_log 에 로봇 아이디 연결
         mission_log.robot_id = active_mission.robot_id
         
-        # 로봇을 Idle 로 변경
-        robot_repo.update_robot_status(active_mission.robot_id, "Idle")
+        # 로봇을 Idle 로 변경 + 도착 시점의 배터리 값도 함께 갱신 (Spec B: A안 — 상태 변경 시점에 갱신)
+        # 도착했으므로 속도는 0으로 설정
+        robot_repo.update_robot_telemetry(
+            active_mission.robot_id,
+            status="Idle",
+            battery_pct=battery_pct,
+            current_speed_mps=0.0,
+        )
         
         # 어떤 로봇인지 알아내기 위해 다시 조회
         robot_obj = robot_repo.get_robot_by_id(active_mission.robot_id)
         if robot_obj:
             robot_name_for_next = robot_obj.name
             
-        logger.info(f"Mission {active_mission.id} completed by {robot_name_for_next}.")
+        logger.info(f"Mission {active_mission.id} completed by {robot_name_for_next}. battery={battery_pct}")
     
     # 1. 엣지 매핑 시도
     edge = edge_repo.get_edge_by_nodes(from_node_id, to_node_id)

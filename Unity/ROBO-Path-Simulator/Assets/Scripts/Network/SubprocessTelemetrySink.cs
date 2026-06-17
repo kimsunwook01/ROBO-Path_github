@@ -16,6 +16,7 @@ namespace ROBOPath.Network
         public float L;
         public float S;
         public float E;
+        public float battery_pct;
     }
 
     /// <summary>
@@ -61,7 +62,7 @@ namespace ROBOPath.Network
             Debug.Log($"[SubprocessTelemetrySink] Script exists: {File.Exists(Path.Combine(projectRoot, scriptPath))}");
         }
 
-        public void EmitFeedback(RobotPlatform platform, string fromNodeId, string toNodeId, float? load, float? stability, float? efficiency)
+        public void EmitFeedback(RobotPlatform platform, string fromNodeId, string toNodeId, float? load, float? stability, float? efficiency, float batteryPct)
         {
             FeedbackPayload payloadObj = new FeedbackPayload
             {
@@ -70,7 +71,8 @@ namespace ROBOPath.Network
                 platform = platform.ToString().ToLower(),  // Python Robot 모델은 "wheeled"/"legged"(소문자)만 허용
                 L = load ?? 0f,
                 S = stability ?? 0f,
-                E = efficiency ?? 0f
+                E = efficiency ?? 0f,
+                battery_pct = batteryPct
             };
 
             string json = JsonUtility.ToJson(payloadObj);
