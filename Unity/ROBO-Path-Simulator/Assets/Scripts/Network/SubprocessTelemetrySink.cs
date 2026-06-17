@@ -13,33 +13,27 @@ namespace ROBOPath.Network
         public string from_node_id;
         public string to_node_id;
         public string platform;
-        public float? L;
-        public float? S;
-        public float? E;
-    }
-
-    [System.Serializable]
-    public class DiscoveryPayload
-    {
-        public float x;
-        public float y;
-        public float z;
+        public float L;
+        public float S;
+        public float E;
     }
 
     /// <summary>
     /// Phase 4 Path 2: Unity -> Python(Subprocess) -> Supabase
-    /// 피드백을 실시간으로 백엔드 파이썬 스크립트를 호출하여 적재합니다.
+    /// 로봇이 목적지에 도착하면 피드백을 Python 스크립트로 전달하여 DB에 적재합니다.
+    /// Discovery(탐색)는 Spec C 구현 전까지 서브프로세스를 호출하지 않습니다.
     /// </summary>
     public class SubprocessTelemetrySink : MonoBehaviour, ITelemetrySink
     {
         private string pythonPath = "python";
         private string scriptPath = "src/infrastructure/bridge/push_feedback.py";
+        private string projectRoot;
 
         void Start()
         {
-            // 프로젝트 루트 기준의 경로가 될 수 있도록 보정할 수 있으나,
-            // 보통 Unity 에디터/빌드에서 실행될 때 CWD나 .env를 활용.
-            // 일단은 상대 경로로 지정.
+            projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "../../../"));
+            Debug.Log($"[SubprocessTelemetrySink] Project root: {projectRoot}");
+            Debug.Log($"[SubprocessTelemetrySink] Script exists: {File.Exists(Path.Combine(projectRoot, scriptPath))}");
         }
 
         public void EmitFeedback(RobotPlatform platform, string fromNodeId, string toNodeId, float? load, float? stability, float? efficiency)
@@ -48,45 +42,34 @@ namespace ROBOPath.Network
             {
                 from_node_id = fromNodeId,
                 to_node_id = toNodeId,
-                platform = platform.ToString(),
-                L = load,
-                S = stability,
-                E = efficiency
+                platform = platform.ToString().ToLower(),  // Python Robot 모델은 "wheeled"/"legged"(소문자)만 허용
+                L = load ?? 0f,
+                S = stability ?? 0f,
+                E = efficiency ?? 0f
             };
 
             string json = JsonUtility.ToJson(payloadObj);
-            
-            // "type":"FEEDBACK" 래핑
             string finalJson = $"{{\"type\":\"FEEDBACK\",\"data\":{json}}}";
-            
+
+            Debug.Log($"[SubprocessTelemetrySink] Sending FEEDBACK: {finalJson}");
             FireAndForgetPython(finalJson);
         }
 
         public void EmitDiscovery(Vector3 nodePos)
         {
-            DiscoveryPayload payloadObj = new DiscoveryPayload
-            {
-                x = nodePos.x,
-                y = nodePos.y,
-                z = nodePos.z
-            };
-
-            string json = JsonUtility.ToJson(payloadObj);
-            
-            // "type":"DISCOVERY" 래핑
-            string finalJson = $"{{\"type\":\"DISCOVERY\",\"data\":{json}}}";
-
-            FireAndForgetPython(finalJson);
+            // Spec C(Discovery 파이프라인) 구현 전까지 서브프로세스를 호출하지 않음.
+            // RaycastScanner가 0.2초마다 수백 번 호출하므로, 여기서 서브프로세스를
+            // 띄우면 시스템이 먹통이 됨. push_feedback.py도 DISCOVERY를 무시하므로
+            // 호출해봐야 의미 없음.
+            // TODO: Spec C 구현 시 배치/스로틀 방식으로 변경
         }
 
         private async void FireAndForgetPython(string jsonArgs)
         {
-            // 백그라운드 스레드에서 서브프로세스 실행 (Unity 메인 스레드 블로킹 방지)
             await Task.Run(() =>
             {
                 try
                 {
-                    // 파이썬 명령어에서 JSON을 안전하게 감싸기 (윈도우/맥 호환)
                     string escapedArgs = jsonArgs.Replace("\"", "\\\"");
 
                     ProcessStartInfo psi = new ProcessStartInfo
@@ -97,32 +80,32 @@ namespace ROBOPath.Network
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
                         CreateNoWindow = true,
-                        // 환경변수 PYTHONPATH="." 적용 효과를 위해 WorkingDirectory를 설정하거나,
-                        // 실행 시점에서 루트 디렉토리 기준이라고 가정
-                        WorkingDirectory = Path.GetFullPath(Path.Combine(Application.dataPath, "../../../")) // ROBO-Path_project root
+                        WorkingDirectory = projectRoot
                     };
+
+                    // PYTHONPATH를 프로젝트 루트로 설정 (src 모듈 import 가능하게)
+                    psi.EnvironmentVariables["PYTHONPATH"] = projectRoot;
 
                     using (Process process = Process.Start(psi))
                     {
-                        process.WaitForExit();
                         string output = process.StandardOutput.ReadToEnd();
                         string error = process.StandardError.ReadToEnd();
+                        process.WaitForExit();
 
                         if (process.ExitCode != 0)
                         {
-                            // 콜백을 통해 Main Thread에서 로깅해야 하지만, 
-                            // UnityEngine.Debug는 스레드 안전성 보장이 완벽하진 않음(단, 2017 이상에서 로깅은 대부분 스레드 세이프)
-                            Debug.LogError($"[SubprocessTelemetrySink] Python Error (Code {process.ExitCode}): {error}");
+                            Debug.LogError($"[SubprocessTelemetrySink] Python Error (Code {process.ExitCode}):\n{error}");
                         }
-                        else if (!string.IsNullOrEmpty(output))
+                        else
                         {
-                            Debug.Log($"[SubprocessTelemetrySink] Python Output: {output.Trim()}");
+                            if (!string.IsNullOrEmpty(output))
+                                Debug.Log($"[SubprocessTelemetrySink] Python Output:\n{output.Trim()}");
                         }
                     }
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogError($"[SubprocessTelemetrySink] Exception starting process: {ex.Message}");
+                    Debug.LogError($"[SubprocessTelemetrySink] Exception: {ex.Message}");
                 }
             });
         }

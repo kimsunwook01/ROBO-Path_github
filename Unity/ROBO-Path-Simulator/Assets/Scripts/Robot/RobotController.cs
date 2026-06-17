@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections.Generic;
 
 namespace ROBOPath.Robot
 {
@@ -16,11 +17,20 @@ namespace ROBOPath.Robot
         public bool isActiveControlled = false;
 
         public float manualMoveSpeed = 3f;
-        public float manualTurnSpeed = 10f; // 회전 보간 속도로 용도 변경
+        public float manualTurnSpeed = 10f;
 
-        private Vector3? currentDestination = null;
+        [Header("Waypoint Navigation")]
+        public float waypointArrivalRadius = 5.0f;  // 웨이포인트 도달 판정 반경 (m)
+        public float finalArrivalRadius = 3.0f;      // 최종 목적지 도달 판정 반경 (m)
+
         private string fromNodeId = "BASE";
         private string toNodeId = "unknown";
+
+        // 웨이포인트 내비게이션
+        private Queue<Vector3> waypointQueue = new Queue<Vector3>();
+        private Vector3? currentWaypoint = null;
+        private string finalDestNodeId = "unknown";
+        private bool isNavigating = false;
 
         void Awake()
         {
@@ -35,9 +45,9 @@ namespace ROBOPath.Robot
             {
                 HandleManualMovement();
             }
-            else if (!isManualMode)
+            else if (!isManualMode && isNavigating)
             {
-                CheckDestinationReached();
+                CheckWaypointReached();
             }
         }
 
@@ -50,13 +60,8 @@ namespace ROBOPath.Robot
             }
             else
             {
-                if (currentDestination.HasValue)
-                {
-                    // Re-apply path, but DO NOT reset manualInterventionOccurred here
-                    // because the user says: "거점에서 자율로 깨끗이 재시작할 때 리셋한다"
-                    // meaning SetDestination resets it, not resuming auto.
-                    SetDestinationInternal(currentDestination.Value);
-                }
+                if (currentWaypoint.HasValue)
+                    NavigateToCurrentWaypoint();
             }
         }
 
@@ -74,20 +79,14 @@ namespace ROBOPath.Robot
                 {
                     Vector3 camFwd = cam.transform.forward;
                     Vector3 camRight = cam.transform.right;
-
-                    camFwd.y = 0;
-                    camRight.y = 0;
-                    camFwd.Normalize();
-                    camRight.Normalize();
+                    camFwd.y = 0; camRight.y = 0;
+                    camFwd.Normalize(); camRight.Normalize();
 
                     Vector3 moveDir = (camFwd * v + camRight * h).normalized;
-
                     if (moveDir.sqrMagnitude > 0.01f)
                     {
-                        // 부드러운 회전 보간
                         Quaternion targetRotation = Quaternion.LookRotation(moveDir);
                         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, manualTurnSpeed * Time.deltaTime);
-                        
                         agent.Move(moveDir * manualMoveSpeed * Time.deltaTime);
                     }
                 }
@@ -95,100 +94,102 @@ namespace ROBOPath.Robot
                 if (!agent.isOnNavMesh)
                 {
                     if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
-                    {
                         transform.position = hit.position;
-                    }
                 }
             }
         }
 
+        /// <summary>
+        /// A* 경로의 웨이포인트들을 순서대로 따라가도록 설정.
+        /// </summary>
+        public void SetDestinationWithWaypoints(Vector3[] waypoints, string destNodeId)
+        {
+            manualInterventionOccurred = false;
+            waypointQueue.Clear();
+
+            foreach (var wp in waypoints)
+                waypointQueue.Enqueue(wp);
+
+            finalDestNodeId = destNodeId;
+            toNodeId = destNodeId;
+            isNavigating = true;
+
+            Debug.Log($"[RobotController] {identify.robotId}: received {waypoints.Length} waypoints -> {destNodeId}");
+            AdvanceToNextWaypoint();
+        }
+
+        /// <summary>
+        /// 단일 목적지로 직접 이동 (하위 호환).
+        /// </summary>
         public void SetDestination(Vector3 dest, string targetNodeId = "unknown")
         {
-            manualInterventionOccurred = false; // Reset on clean restart
-            currentDestination = dest;
+            manualInterventionOccurred = false;
+            waypointQueue.Clear();
+            waypointQueue.Enqueue(dest);
+            finalDestNodeId = targetNodeId;
             toNodeId = targetNodeId;
-            if (!isManualMode)
-            {
-                SetDestinationInternal(dest);
-            }
+            isNavigating = true;
+            AdvanceToNextWaypoint();
         }
 
-        private void SetDestinationInternal(Vector3 dest)
+        private void AdvanceToNextWaypoint()
         {
-            if (agent == null || !agent.isOnNavMesh) return;
-
-            NavMeshPath path = new NavMeshPath();
-            if (agent.CalculatePath(dest, path))
+            if (waypointQueue.Count == 0)
             {
-                // 부분 경로(도달 불가) 거부 — 배달 로봇이 도달할 수 없는 목적지로 부분 주행하는 것을 방지
-                if (path.status != UnityEngine.AI.NavMeshPathStatus.PathComplete)
-                {
-                    Debug.LogWarning($"[RobotController] Path rejected for {identify.platform} — destination unreachable (status: {path.status})");
-                    agent.ResetPath();
-                    return;
-                }
-
-                if (ValidatePath(path))
-                {
-                    agent.SetPath(path);
-                }
-                else
-                {
-                    Debug.LogWarning($"[RobotController] Path rejected for {identify.platform} — terrain validation failed");
-                    agent.ResetPath();
-                }
+                currentWaypoint = null;
+                isNavigating = false;
+                return;
             }
+
+            currentWaypoint = waypointQueue.Dequeue();
+            NavigateToCurrentWaypoint();
         }
 
-        public bool ValidatePath(NavMeshPath path)
+        private void NavigateToCurrentWaypoint()
         {
-            if (identify.platform != RobotPlatform.Wheeled) return true;
-
-            for (int i = 0; i < path.corners.Length - 1; i++)
-            {
-                Vector3 start = path.corners[i];
-                Vector3 end = path.corners[i + 1];
-                float dist = Vector3.Distance(start, end);
-
-                for (float d = 0; d <= dist; d += 1.0f)
-                {
-                    Vector3 samplePoint = Vector3.Lerp(start, end, d / dist);
-                    samplePoint.y += 0.5f;
-
-                    if (Physics.Raycast(samplePoint, Vector3.down, out RaycastHit hit, 2f))
-                    {
-                        if (hit.collider.CompareTag("Path_Stair")) return false;
-                    }
-                }
-            }
-            return true;
+            if (!currentWaypoint.HasValue || agent == null || !agent.isOnNavMesh) return;
+            agent.SetDestination(currentWaypoint.Value);
         }
 
-        private void CheckDestinationReached()
+        private void CheckWaypointReached()
         {
-            if (!agent.pathPending && agent.hasPath && agent.remainingDistance <= agent.stoppingDistance)
+            if (!currentWaypoint.HasValue) return;
+
+            // NavMeshAgent 내부 상태 대신 물리적 거리를 직접 측정
+            float dist = Vector3.Distance(transform.position, currentWaypoint.Value);
+            bool isFinalWaypoint = (waypointQueue.Count == 0);
+            float threshold = isFinalWaypoint ? finalArrivalRadius : waypointArrivalRadius;
+
+            if (dist <= threshold)
             {
-                if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+                agent.ResetPath();
+
+                if (isFinalWaypoint)
                 {
-                    agent.ResetPath();
-                    
+                    // 최종 목적지 도착: 피드백 발생
+                    currentWaypoint = null;
+                    isNavigating = false;
+
+                    Debug.Log($"[RobotController] {identify.robotId}: reached final destination {finalDestNodeId}");
+
                     if (!manualInterventionOccurred && telemetrySink != null)
                     {
                         string terrainTag = "Terrain_Flat";
                         if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
                         {
                             if (!string.IsNullOrEmpty(hit.collider.tag) && hit.collider.tag != "Untagged")
-                            {
                                 terrainTag = hit.collider.tag;
-                            }
                         }
 
                         FeedbackMetrics metrics = FeedbackCalculator.ComputeMetrics(identify.platform, terrainTag);
-                        telemetrySink.EmitFeedback(identify.platform, fromNodeId, toNodeId, metrics.L, metrics.S, metrics.E);
-                        
-                        // 다음 구간을 위해 출발 노드 갱신
-                        fromNodeId = toNodeId;
+                        telemetrySink.EmitFeedback(identify.platform, fromNodeId, finalDestNodeId, metrics.L, metrics.S, metrics.E);
+                        fromNodeId = finalDestNodeId;
                     }
+                }
+                else
+                {
+                    // 중간 웨이포인트: 피드백 없이 다음으로
+                    AdvanceToNextWaypoint();
                 }
             }
         }

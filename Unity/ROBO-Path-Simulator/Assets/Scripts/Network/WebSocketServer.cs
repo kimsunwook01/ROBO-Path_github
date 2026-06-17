@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,22 +11,25 @@ using ROBOPath.Robot;
 namespace ROBOPath.Network
 {
     [Serializable]
+    public class Waypoint
+    {
+        public float x;
+        public float y;
+        public float z;
+    }
+
+    [Serializable]
     public class CommandMessage
     {
         public string type;
         public bool active;
         public string robot_id;
-        public float dest_x;
-        public float dest_y;
-        public float dest_z;
         public string dest_node_id;
+        public Waypoint[] waypoints;
     }
 
     /// <summary>
-    /// Phase 4 Path 1: Python 클라이언트의 명령(예: 장애물 토글)을 수신하기 위한 
-    /// Unity 내장 WebSocket 서버.
-    /// System.Net.HttpListener를 사용하여 로컬 포트를 수신 대기하고,
-    /// ConcurrentQueue를 통해 안전하게 Unity Main Thread에서 명령을 실행한다.
+    /// Python → Unity 명령 수신 서버 (HTTP POST 방식).
     /// </summary>
     public class WebSocketServer : MonoBehaviour
     {
@@ -41,22 +43,16 @@ namespace ROBOPath.Network
 
         void Start()
         {
-            // .env 또는 환경변수에서 포트 확인
             string portStr = Environment.GetEnvironmentVariable("SIMULATOR_WS_PORT");
             int port = defaultPort;
             if (!string.IsNullOrEmpty(portStr) && int.TryParse(portStr, out int parsedPort))
-            {
                 port = parsedPort;
-            }
 
             string host = Environment.GetEnvironmentVariable("SIMULATOR_HOST");
             if (string.IsNullOrEmpty(host))
-            {
                 host = "127.0.0.1";
-            }
 
             cancellationTokenSource = new CancellationTokenSource();
-            // 개발 환경(localhost) 임시값 — Mac Mini 배포 전 SIMULATOR_HOST 기반 와일드카드 바인딩으로 되돌려야 함
             string uri = $"http://{host}:{port}/";
             StartServer(uri);
         }
@@ -68,11 +64,11 @@ namespace ROBOPath.Network
             {
                 httpListener.Prefixes.Add(uri);
                 httpListener.Start();
-                Debug.Log($"WebSocket Server listening on {uri}");
+                Debug.Log($"[WebSocketServer] Listening on {uri}");
             }
             catch (Exception e)
             {
-                Debug.LogError($"Failed to start HttpListener: {e.Message}");
+                Debug.LogError($"[WebSocketServer] Failed to start: {e.Message}");
                 return;
             }
 
@@ -82,127 +78,113 @@ namespace ROBOPath.Network
                 {
                     HttpListenerContext context = await httpListener.GetContextAsync();
                     if (context.Request.HttpMethod == "POST")
-                    {
-                        ProcessWebSocketRequest(context);
-                    }
+                        HandlePost(context);
                     else
                     {
                         context.Response.StatusCode = 400;
                         context.Response.Close();
                     }
                 }
-                catch (HttpListenerException)
-                {
-                    // Listener stopped or disposed
-                    break;
-                }
+                catch (HttpListenerException) { break; }
                 catch (Exception e)
                 {
                     if (!cancellationTokenSource.IsCancellationRequested)
-                        Debug.LogError($"HttpListener Accept Error: {e.Message}");
+                        Debug.LogError($"[WebSocketServer] Accept Error: {e.Message}");
                 }
             }
         }
 
-        private async void ProcessWebSocketRequest(HttpListenerContext context)
+        private async void HandlePost(HttpListenerContext context)
         {
             try
             {
-                if (context.Request.HttpMethod == "POST")
+                using (var reader = new System.IO.StreamReader(context.Request.InputStream, context.Request.ContentEncoding ?? Encoding.UTF8))
                 {
-                    using (var reader = new System.IO.StreamReader(context.Request.InputStream, context.Request.ContentEncoding ?? Encoding.UTF8))
-                    {
-                        string message = await reader.ReadToEndAsync();
-                        messageQueue.Enqueue(message);
-                    }
-                    context.Response.StatusCode = 200;
-                    byte[] response = Encoding.UTF8.GetBytes("OK");
-                    context.Response.ContentLength64 = response.Length;
-                    await context.Response.OutputStream.WriteAsync(response, 0, response.Length);
-                    context.Response.Close();
+                    string message = await reader.ReadToEndAsync();
+                    messageQueue.Enqueue(message);
                 }
-                else
-                {
-                    context.Response.StatusCode = 405; // Method Not Allowed
-                    context.Response.Close();
-                }
+                context.Response.StatusCode = 200;
+                byte[] resp = Encoding.UTF8.GetBytes("OK");
+                context.Response.ContentLength64 = resp.Length;
+                await context.Response.OutputStream.WriteAsync(resp, 0, resp.Length);
+                context.Response.Close();
             }
             catch (Exception e)
             {
-                Debug.LogError($"HTTP Post Accept Error: {e.Message}");
-                context.Response.StatusCode = 500;
-                context.Response.Close();
+                Debug.LogError($"[WebSocketServer] POST Error: {e.Message}");
+                try { context.Response.StatusCode = 500; context.Response.Close(); } catch { }
             }
         }
 
-        // ReceiveMessages was removed because we now use HTTP POST directly
-
         void Update()
         {
-            // 백그라운드 스레드에서 수신한 메시지를 Main Thread로 꺼내 처리
             while (messageQueue.TryDequeue(out string message))
-            {
                 ProcessMessageOnMainThread(message);
-            }
         }
 
         private void ProcessMessageOnMainThread(string message)
         {
-            Debug.Log($"Received Command: {message}");
+            Debug.Log($"[WebSocketServer] Received: {message.Substring(0, Math.Min(message.Length, 200))}");
             try
             {
                 CommandMessage cmd = JsonUtility.FromJson<CommandMessage>(message);
-                if (cmd != null)
+                if (cmd == null) return;
+
+                if (cmd.type == "HAZARD_TOGGLE")
                 {
-                    if (cmd.type == "HAZARD_TOGGLE")
+                    HazardTileController[] controllers = FindObjectsOfType<HazardTileController>();
+                    foreach (var ctrl in controllers)
+                        ctrl.SetHazardActive(cmd.active);
+                    Debug.Log($"[HAZARD_TOGGLE] active={cmd.active}, tiles={controllers.Length}");
+                }
+                else if (cmd.type == "ASSIGN_MISSION")
+                {
+                    RobotIdentify[] robots = FindObjectsOfType<RobotIdentify>();
+                    bool found = false;
+                    foreach (var robot in robots)
                     {
-                        // 활성/비활성 명령에 따라 모든 Hazard 타일 제어
-                        HazardTileController[] controllers = FindObjectsOfType<HazardTileController>();
-                        foreach (var ctrl in controllers)
+                        if (robot.robotId == cmd.robot_id)
                         {
-                            ctrl.SetHazardActive(cmd.active);
-                        }
-                        Debug.Log($"[HAZARD_TOGGLE] active: {cmd.active}, affected tiles: {controllers.Length}");
-                    }
-                    else if (cmd.type == "ASSIGN_MISSION")
-                    {
-                        RobotIdentify[] robots = FindObjectsOfType<RobotIdentify>();
-                        bool found = false;
-                        foreach (var robot in robots)
-                        {
-                            if (robot.robotId == cmd.robot_id)
+                            RobotController controller = robot.GetComponent<RobotController>();
+                            if (controller != null)
                             {
-                                RobotController controller = robot.GetComponent<RobotController>();
-                                if (controller != null)
+                                if (cmd.waypoints != null && cmd.waypoints.Length > 0)
                                 {
-                                    controller.SetDestination(new Vector3(cmd.dest_x, cmd.dest_y, cmd.dest_z), cmd.dest_node_id);
-                                    Debug.Log($"[ASSIGN_MISSION] Robot {cmd.robot_id} moving to {cmd.dest_node_id} ({cmd.dest_x}, {cmd.dest_y}, {cmd.dest_z})");
-                                    found = true;
-                                    break;
+                                    // 웨이포인트 경로를 따라가도록 설정
+                                    Vector3[] wps = new Vector3[cmd.waypoints.Length];
+                                    for (int i = 0; i < cmd.waypoints.Length; i++)
+                                        wps[i] = new Vector3(cmd.waypoints[i].x, cmd.waypoints[i].y, cmd.waypoints[i].z);
+
+                                    controller.SetDestinationWithWaypoints(wps, cmd.dest_node_id);
+                                    Debug.Log($"[ASSIGN_MISSION] {cmd.robot_id} -> {cmd.dest_node_id} ({wps.Length} waypoints)");
                                 }
+                                else
+                                {
+                                    // 웨이포인트 없이 직접 목적지 (하위 호환)
+                                    controller.SetDestination(new Vector3(cmd.waypoints[0].x, cmd.waypoints[0].y, cmd.waypoints[0].z), cmd.dest_node_id);
+                                    Debug.Log($"[ASSIGN_MISSION] {cmd.robot_id} -> {cmd.dest_node_id} (direct)");
+                                }
+                                found = true;
+                                break;
                             }
                         }
-                        if (!found)
-                        {
-                            Debug.LogWarning($"[ASSIGN_MISSION] Robot {cmd.robot_id} not found to assign mission to.");
-                        }
                     }
+                    if (!found)
+                        Debug.LogWarning($"[ASSIGN_MISSION] Robot {cmd.robot_id} not found.");
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"Failed to parse or execute WebSocket command: {e.Message}");
+                Debug.LogError($"[WebSocketServer] Parse/Execute Error: {e.Message}");
             }
         }
 
         void OnDestroy()
         {
             cancellationTokenSource?.Cancel();
-
             if (httpListener != null)
             {
-                if (httpListener.IsListening)
-                    httpListener.Stop();
+                if (httpListener.IsListening) httpListener.Stop();
                 httpListener.Close();
             }
         }
