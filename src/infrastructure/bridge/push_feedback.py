@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from src.infrastructure.database.client import get_supabase_client
+from src.infrastructure.database.client import get_supabase_admin_client
 from src.infrastructure.database.supabase_edge_repo import SupabaseEdgeRepository
 from src.application.services.feedback_aggregation_service import FeedbackAggregationService
 from src.domain.models import MissionLog, Robot
@@ -40,8 +40,8 @@ def main():
         logger.error(f"Missing required fields in feedback data: {fb}")
         sys.exit(1)
         
-    # Init Repos
-    db_client = get_supabase_client()
+    # Init Repos (Admin)
+    db_client = get_supabase_admin_client()
     edge_repo = SupabaseEdgeRepository(db_client)
     agg_service = FeedbackAggregationService(edge_repo)
     
