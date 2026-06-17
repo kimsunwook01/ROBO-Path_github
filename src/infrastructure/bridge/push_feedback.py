@@ -28,17 +28,28 @@ def main():
         logger.info(f"Ignored non-feedback payload type: {data.get('type')}")
         sys.exit(0)
         
+    import uuid
     fb = data.get("data", {})
-    from_node_id = fb.get("from_node_id")
-    to_node_id = fb.get("to_node_id")
+    from_node_id_raw = fb.get("from_node_id")
+    to_node_id_raw = fb.get("to_node_id")
     platform = fb.get("platform")
     load = fb.get("L")
     stability = fb.get("S")
     efficiency = fb.get("E")
     
-    if not (from_node_id and to_node_id and platform and load is not None and stability is not None and efficiency is not None):
+    if not (from_node_id_raw and to_node_id_raw and platform and load is not None and stability is not None and efficiency is not None):
         logger.error(f"Missing required fields in feedback data: {fb}")
         sys.exit(1)
+
+    try:
+        from_node_id = str(uuid.UUID(from_node_id_raw))
+    except ValueError:
+        from_node_id = str(uuid.uuid5(uuid.NAMESPACE_OID, from_node_id_raw))
+        
+    try:
+        to_node_id = str(uuid.UUID(to_node_id_raw))
+    except ValueError:
+        to_node_id = str(uuid.uuid5(uuid.NAMESPACE_OID, to_node_id_raw))
         
     # Init Repos (Admin)
     db_client = get_supabase_admin_client()
