@@ -55,15 +55,40 @@ class UnityWebSocketBridge:
         }
         await self.send_command(command)
 
+    async def assign_mission(self, robot_id: str, dest_node_id: str, dest_x: float, dest_y: float, dest_z: float):
+        """
+        특정 로봇에게 목적지로 이동하라는 명령 전송
+        """
+        command = {
+            "type": "ASSIGN_MISSION",
+            "robot_id": robot_id,
+            "dest_node_id": dest_node_id,
+            "dest_x": dest_x,
+            "dest_y": dest_y,
+            "dest_z": dest_z
+        }
+        await self.send_command(command)
+
 # 예제 실행용 (CLI 테스트)
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     async def main():
         bridge = UnityWebSocketBridge()
         await bridge.connect()
+        
+        # Hazard 토글 테스트
         await bridge.toggle_hazards(True)
         await asyncio.sleep(2)
         await bridge.toggle_hazards(False)
+        
+        # Mission 배정 테스트 (Wheeled-01을 특정한 위치로 이동 명령)
+        await asyncio.sleep(1)
+        await bridge.assign_mission(
+            robot_id="Wheeled-01",
+            dest_node_id="Tile_Destination_x1_z26_y32_r0",
+            dest_x=15.0, dest_y=32.25, dest_z=265.0
+        )
+        
         await bridge.disconnect()
         
     asyncio.run(main())

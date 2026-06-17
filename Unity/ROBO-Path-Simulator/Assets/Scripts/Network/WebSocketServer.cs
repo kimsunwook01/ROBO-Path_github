@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using UnityEngine;
 using ROBOPath.Tile;
+using ROBOPath.Robot;
 
 namespace ROBOPath.Network
 {
@@ -15,6 +16,11 @@ namespace ROBOPath.Network
     {
         public string type;
         public bool active;
+        public string robot_id;
+        public float dest_x;
+        public float dest_y;
+        public float dest_z;
+        public string dest_node_id;
     }
 
     /// <summary>
@@ -164,15 +170,41 @@ namespace ROBOPath.Network
             try
             {
                 CommandMessage cmd = JsonUtility.FromJson<CommandMessage>(message);
-                if (cmd != null && cmd.type == "HAZARD_TOGGLE")
+                if (cmd != null)
                 {
-                    // 활성/비활성 명령에 따라 모든 Hazard 타일 제어
-                    HazardTileController[] controllers = FindObjectsOfType<HazardTileController>();
-                    foreach (var ctrl in controllers)
+                    if (cmd.type == "HAZARD_TOGGLE")
                     {
-                        ctrl.SetHazardActive(cmd.active);
+                        // 활성/비활성 명령에 따라 모든 Hazard 타일 제어
+                        HazardTileController[] controllers = FindObjectsOfType<HazardTileController>();
+                        foreach (var ctrl in controllers)
+                        {
+                            ctrl.SetHazardActive(cmd.active);
+                        }
+                        Debug.Log($"[HAZARD_TOGGLE] active: {cmd.active}, affected tiles: {controllers.Length}");
                     }
-                    Debug.Log($"[HAZARD_TOGGLE] active: {cmd.active}, affected tiles: {controllers.Length}");
+                    else if (cmd.type == "ASSIGN_MISSION")
+                    {
+                        RobotIdentify[] robots = FindObjectsOfType<RobotIdentify>();
+                        bool found = false;
+                        foreach (var robot in robots)
+                        {
+                            if (robot.robotId == cmd.robot_id)
+                            {
+                                RobotController controller = robot.GetComponent<RobotController>();
+                                if (controller != null)
+                                {
+                                    controller.SetDestination(new Vector3(cmd.dest_x, cmd.dest_y, cmd.dest_z), cmd.dest_node_id);
+                                    Debug.Log($"[ASSIGN_MISSION] Robot {cmd.robot_id} moving to {cmd.dest_node_id} ({cmd.dest_x}, {cmd.dest_y}, {cmd.dest_z})");
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!found)
+                        {
+                            Debug.LogWarning($"[ASSIGN_MISSION] Robot {cmd.robot_id} not found to assign mission to.");
+                        }
+                    }
                 }
             }
             catch (Exception e)
