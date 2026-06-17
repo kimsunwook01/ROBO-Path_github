@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from uuid import UUID, uuid4
 from pydantic import BaseModel, Field
 
@@ -26,5 +26,9 @@ class Robot(BaseModel):
     name: str = Field(..., max_length=100)
     # 플랫폼은 wheeled(바퀴형) 또는 legged(보행형)만 허용
     platform: str = Field(..., pattern="^(wheeled|legged)$")
+    status: str = Field(default="Idle")
+    battery_pct: float = Field(default=100.0)
+    current_speed_mps: float = Field(default=0.0)
+    current_mission_id: Optional[UUID] = None
     weight_profile: Dict[str, Any] = Field(default_factory=dict)
     created_at: datetime = Field(default_factory=datetime.utcnow)
