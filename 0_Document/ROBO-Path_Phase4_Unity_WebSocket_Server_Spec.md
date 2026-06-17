@@ -1,71 +1,67 @@
-# Phase 4: Unity 내장 WebSocket 서버 및 Python 브릿지 구현 명세서
+# Phase 4: Unity-Python 통신 파이프라인 (3-Way Bridge) 연동 명세서
 
 > 작성일: 2026-06-17  
-> 대상 파이프라인: `Unity 시뮬레이터 (Server)` ↔ `Python Backend (Client)` ↔ `Supabase DB`
+> 대상 아키텍처: `ROBO-Path Unity Simulator Architecture` 내 3-Way Bridge (Path 1 & Path 2)
 
 ---
 
 ## 1. 목적 및 개요
 
-Unity 시뮬레이터 내부에서 자체적인 **WebSocket 서버**를 구동하여, 로봇 주행 중 발생하는 텔레메트리(발견된 노드, 주행 완료에 따른 피드백 성적 등)를 외부로 브로드캐스트합니다.
-동시에 파이썬 기반의 **브릿지(Client)** 프로그램이 이에 접속하여 데이터를 수신한 뒤, 백엔드의 `FeedbackAggregationService`를 통해 Supabase 데이터베이스에 적재하고 엣지 가중치(`platform_stats`)를 갱신합니다. 또한, 파이썬 브릿지는 Unity 쪽으로 돌발 이벤트(예: `Tile_Hazard` 활성화) 명령을 송신하여 양방향 제어를 완성합니다.
+기존 확정된 아키텍처 4장 '3-Way Bridge' 설계에 따라 Unity 시뮬레이터와 관제 시스템/DB 간의 통신망을 구축합니다.
+1. **명령 채널 (Path 1):** Python(클라이언트) $\rightarrow$ Unity(서버) 웹소켓 구조. 환경 제어(예: 장애물 타일 활성화) 등을 담당.
+2. **피드백 채널 (Path 2):** Unity $\rightarrow$ Python(서브프로세스) $\rightarrow$ Supabase 직접 연결 구조. 로봇 텔레메트리를 지연 없이 DB에 적재.
+
+> **[설계 변경 고지 (단순화)]**  
+> 아키텍처 3.2절의 '엣지 횡단마다 피드백 산출' 로직을 **Step 4(현재) 범위에서는 '목적지 도착 시 1회'로 단순화**합니다.  
+> - 사유: 구현 시간 제약 및 난이도 조절. 세분화된 개별 엣지 단위 피드백 처리는 후속 과제로 남깁니다.
+> - 따라서 `SetDestination`(출발지~도착지) 이동 전체를 논리적 1구간으로 취급하고, 목적지에 도착했을 때 단 1회의 `EmitFeedback`을 발생시킵니다.
+
+※ 기존 제안되었던 "Python이 WebSocket으로 상시 수신 대기하며 피드백을 받는 구조"는 폐기하며, 아키텍처 원안을 준수합니다.
 
 ---
 
-## 2. 프로젝트 현황 대조 및 사전 검증
+## 2. 해결된 설계 공백 (피드백 식별자 불일치)
 
-본 계획을 수립하기 위해 프로젝트의 현재 상태를 검증한 결과입니다.
+현재 `ITelemetrySink.EmitFeedback(platform, terrainTag, L, S, E)`에는 엣지 식별자가 누락되어 백엔드 통계 갱신 시 매핑이 불가능합니다. 이를 다음과 같이 해결합니다.
 
-| 검증 항목 | 확인 결과 | 조치 필요 사항 |
-|-----------|-----------|----------------|
-| **Unity 통신 기반** | `ITelemetrySink` 인터페이스 및 로컬 로그용 `LogTelemetrySink` 존재함. | `ITelemetrySink`를 구현하는 `WebSocketTelemetrySink` 신규 작성 필요. |
-| **장애물 타일 제어** | `HazardTileController.SetHazardActive(bool)` API가 구현됨(Phase 3c). | WebSocket 수신부에서 특정 명령을 파싱해 이 API를 호출하는 브릿징 코드 필요. |
-| **Python 백엔드 서비스** | `FeedbackAggregationService` 및 Supabase 저장소 레포지토리가 이미 구현되어 있음. | 수신된 WebSocket JSON 페이로드를 도메인 모델로 매핑하고 서비스를 호출하는 `unity_bridge.py` 작성 필요. |
-| **비동기 통신 라이브러리** | Python 측 `websockets`, `asyncio` 모듈. Unity 측 `System.Net.HttpListener` 및 `System.Net.WebSockets`. | 추가 플러그인 없이 Unity 내장 클래스와 Python 기본 생태계로 구현 가능. |
+- **단위 정의:** 엣지 32개를 지나는 세부 경로라도 개별 추적하지 않고, 단일 '논리적 구간'으로 보아 도착 시 1회 피드백합니다.
+- **Unity 측 수정:** `RobotController`는 출발 노드 ID(`fromNodeId`)와 목적지 노드 ID(`toNodeId`) 필드를 유지하며 추적합니다. `ITelemetrySink.EmitFeedback(string platform, string fromNodeId, string toNodeId, ...)` 로 수정하여 두 식별자 쌍을 피드백에 전달합니다. (이를 위해 `SetDestination` 함수 인자도 문자열 식별자를 함께 받도록 확장)
+- **Python 측 수정:** 파이썬 서브프로세스(`push_feedback.py`)는 수신받은 `fromNodeId`, `toNodeId` 쌍을 통해 `map_edges`에서 일치하는 `edge_id`를 조회합니다. 조회 성공 시 `process_new_log(edge_id, ...)`를 통해 통계를 갱신하며, 일치하는 엣지가 없으면 (논리적 통짜 구간이므로) 통계 갱신은 건너뛰고 `mission_logs` 기록만 남기는 폴백(Fallback) 처리를 수행합니다.
 
 ---
 
-## 3. 구현 단계 (작업 세분화)
+## 3. 구현 단계 (STEP 1 ~ STEP 4)
 
-작업의 복잡도를 낮추고 오류를 추적하기 쉽도록 총 4개의 세부 단계로 나누어 진행합니다.
+### STEP 1. Path 1: Unity 명령 수신용 WebSocket 서버 구축
+- **위치:** `Unity/Assets/Scripts/Network/WebSocketServer.cs`
+- **구현 내용:** 
+  - `.env`에 정의된 `SIMULATOR_WS_PORT`(기본 8765)와 `SIMULATOR_HOST`를 기준으로 포트를 바인딩.
+  - Python으로부터 송신되는 제어 명령 JSON(예: `HAZARD_TOGGLE` 등)을 수신.
+  - 백그라운드 스레드에서 받은 메시지를 `ConcurrentQueue`와 `Update()`를 통해 Unity 메인 스레드로 전달.
 
-### STEP 1. Unity `WebSocketServer` 및 통신 인프라 구축
-**대상 파일:** `Assets/Scripts/Network/WebSocketServer.cs` (신규)
+### STEP 2. Path 1: 양방향 제어 명령 브릿지 연결 (장애물 타일)
+- **위치:** `src/presentation/ros2_bridge/bridge.py` 및 Unity `WebSocketServer.cs` 연동부
+- **구현 내용:**
+  - Python에서 `websockets`를 이용해 Unity(ws://SIMULATOR_HOST:SIMULATOR_WS_PORT)에 접속.
+  - Python이 임의의 조건에 따라 `{"type": "HAZARD_TOGGLE", "active": true}` 송신.
+  - Unity 메인 스레드는 이를 파싱해 맵 안의 `Tile_Hazard` 객체들을 찾아 `HazardTileController.SetHazardActive()`를 호출.
 
-**작업 내용:**
-- `HttpListener`를 사용하여 로컬 포트(예: 8080)에서 WebSocket 연결을 수락하는 기본 서버 구동 (별도 스레드 또는 `async/await` 활용).
-- 연결된 클라이언트 리스트 관리 및 브로드캐스트(`BroadcastMessage`) 기능 구현.
-- MonoBehaviour 기반으로 Unity 생명주기(`OnEnable`, `OnDisable`)에 맞춰 서버 안전 종료 로직 작성.
+### STEP 3. Path 2: Unity 피드백 Subprocess 전송 로직 구현
+- **위치:** `Unity/Assets/Scripts/Network/SubprocessTelemetrySink.cs` (신규)
+- **구현 내용:**
+  - `ITelemetrySink`를 구현.
+  - `EmitFeedback` 호출 시 파라미터(`from_node_id`, `to_node_id`, `platform`, `L`, `S`, `E`)를 JSON으로 직렬화.
+  - `System.Diagnostics.Process`를 사용해 백엔드의 `python src/infrastructure/bridge/push_feedback.py '[JSON]'`을 비동기(또는 fire-and-forget) 방식으로 즉시 호출.
 
-### STEP 2. Unity `WebSocketTelemetrySink` 구현 및 연동
-**대상 파일:** `Assets/Scripts/Network/WebSocketTelemetrySink.cs` (신규)
-
-**작업 내용:**
-- `ITelemetrySink` 인터페이스 구현.
-- `EmitFeedback(feedback)` 및 `EmitDiscovery(pos)` 호출 시, 데이터를 JSON 문자열로 직렬화하여 `WebSocketServer`를 통해 전송.
-- 로봇 프리팹(`Robot_Wheeled`, `Robot_Legged`)의 `LogTelemetrySink`를 대체(또는 병행)하도록 부착 및 연결.
-
-### STEP 3. Python 브릿지 클라이언트 구현 (수신 및 DB 적재)
-**대상 파일:** `src/presentation/ros2_bridge/unity_bridge.py` (신규)
-
-**작업 내용:**
-- 파이썬 `websockets` 라이브러리를 사용해 `ws://localhost:8080`에 지속적으로 연결 유지.
-- 수신된 JSON 데이터 파싱 (예: 메시지 타입이 `FEEDBACK`인지 `DISCOVERY`인지 분류).
-- `FEEDBACK` 수신 시: 
-  1. `MissionLog` 도메인 객체 생성.
-  2. `FeedbackAggregationService.process_feedback()`을 호출하여 `mission_logs` DB 삽입 및 `map_edges`의 `platform_stats` 업데이트 수행.
-
-### STEP 4. 양방향 제어: Python $\rightarrow$ Unity 장애물 타일 제어
-**대상 파일:** 
-- `Assets/Scripts/Network/WebSocketServer.cs` (수신부 추가)
-- `src/presentation/ros2_bridge/unity_bridge.py` (송신부 추가)
-
-**작업 내용:**
-- **[Python]** 무작위 타이머 또는 특정 조건에 맞춰 `{"type": "HAZARD_TOGGLE", "active": true}` 형태의 제어 명령을 Unity로 송신.
-- **[Unity]** 수신한 명령을 메인 스레드(Dispatcher) 큐로 전달. 맵에 존재하는 `Tile_Hazard` 오브젝트들을 찾아 `SetHazardActive()`를 호출하여 투명도 및 활성 상태 전환.
+### STEP 4. Path 2: Python 피드백 수신 스크립트 및 DB 적재
+- **위치:** `src/infrastructure/bridge/push_feedback.py` (CLI 진입점 신규) 및 `FeedbackAggregationService`
+- **구현 내용:**
+  - CLI 인자로 넘어온 JSON을 파싱.
+  - 파싱된 `from_node_id`와 `to_node_id`를 사용하여 `map_edges` 테이블에서 일치하는 엣지의 `edge_id` 조회.
+  - 엣지가 존재하면 `FeedbackAggregationService.process_new_log(edge_id, robot, mission_log)` 호출 (통계 갱신 + 로그 적재).
+  - 엣지가 존재하지 않으면(단순화된 논리적 장거리 구간이라 그래프에 직통 엣지가 없는 경우) 엣지 통계 갱신은 스킵(Skip)하고 `mission_logs` 테이블에 삽입(Insert)만 수행하는 예외 처리 추가.
 
 ---
 
-## 4. 제약 사항 및 고려 사항
-- **스레드 안전성 (Thread Safety):** `System.Net.WebSockets` 수신 콜백은 백그라운드 스레드에서 실행되므로, 여기서 직접 Unity GameObject에 접근하면 에러가 발생합니다. 반드시 `ConcurrentQueue`와 `Update()`를 활용한 메인 스레드 디스패칭(Main Thread Dispatching) 패턴을 사용해야 합니다.
-- **직렬화 성능:** Unity에서 JSON 파싱은 `Newtonsoft.Json`을 활용하여 박싱/언박싱 오버헤드를 최소화합니다.
+## 4. 고려 사항
+- **Path 2 서브프로세스 오버헤드:** 수많은 로봇이 짧은 주기로 잦은 엣지를 통과할 때 `System.Diagnostics.Process` 스핀업 비용이 우려된다면, 향후 Batching 메커니즘 추가를 검토할 수 있으나 현재는 아키텍처 명세대로 "즉시 서브프로세스 호출" 방식을 준수하여 안정성을 최우선으로 확보합니다.
