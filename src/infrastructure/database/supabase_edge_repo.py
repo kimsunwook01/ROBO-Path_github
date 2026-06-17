@@ -24,6 +24,16 @@ class SupabaseEdgeRepository(EdgeRepository):
                 logger.error(f"Data/Parsing error fetching edge by id: {e}", exc_info=True)
             return None
 
+    def get_edge_by_nodes(self, from_node_id: str, to_node_id: str) -> Optional[Edge]:
+        try:
+            response = self.db.table("map_edges").select("*").eq("from_node_id", from_node_id).eq("to_node_id", to_node_id).execute()
+            if response.data:
+                return Edge(**response.data[0])
+            return None
+        except Exception as e:
+            logger.error(f"Error fetching edge by nodes: {e}", exc_info=True)
+            return None
+
     def get_edges_by_node(self, from_node_id: str) -> List[Edge]:
         try:
             response = self.db.table("map_edges").select("*").eq("from_node_id", from_node_id).execute()

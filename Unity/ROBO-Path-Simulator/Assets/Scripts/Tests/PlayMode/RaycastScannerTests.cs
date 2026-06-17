@@ -9,7 +9,7 @@ namespace ROBOPath.Tests.PlayMode
     public class MockTelemetrySink : MonoBehaviour, ITelemetrySink
     {
         public int DiscoveryCount = 0;
-        public void EmitFeedback(RobotPlatform platform, string terrainTag, float? load, float? stability, float? efficiency) {}
+        public void EmitFeedback(RobotPlatform platform, string fromNodeId, string toNodeId, float? load, float? stability, float? efficiency) {}
         public void EmitDiscovery(Vector3 nodePos) { DiscoveryCount++; }
     }
 

@@ -19,6 +19,8 @@ namespace ROBOPath.Robot
         public float manualTurnSpeed = 10f; // 회전 보간 속도로 용도 변경
 
         private Vector3? currentDestination = null;
+        private string fromNodeId = "BASE";
+        private string toNodeId = "unknown";
 
         void Awake()
         {
@@ -100,10 +102,11 @@ namespace ROBOPath.Robot
             }
         }
 
-        public void SetDestination(Vector3 dest)
+        public void SetDestination(Vector3 dest, string targetNodeId = "unknown")
         {
             manualInterventionOccurred = false; // Reset on clean restart
             currentDestination = dest;
+            toNodeId = targetNodeId;
             if (!isManualMode)
             {
                 SetDestinationInternal(dest);
@@ -184,7 +187,10 @@ namespace ROBOPath.Robot
                         }
 
                         FeedbackMetrics metrics = FeedbackCalculator.ComputeMetrics(identify.platform, terrainTag);
-                        telemetrySink.EmitFeedback(identify.platform, terrainTag, metrics.L, metrics.S, metrics.E);
+                        telemetrySink.EmitFeedback(identify.platform, fromNodeId, toNodeId, metrics.L, metrics.S, metrics.E);
+                        
+                        // 다음 구간을 위해 출발 노드 갱신
+                        fromNodeId = toNodeId;
                     }
                 }
             }

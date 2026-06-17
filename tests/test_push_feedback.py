@@ -1,0 +1,29 @@
+import json
+import subprocess
+import pytest
+
+def test_push_feedback_invalid_json():
+    result = subprocess.run(
+        ["python", "src/infrastructure/bridge/push_feedback.py", "invalid_json"],
+        capture_output=True, text=True
+    )
+    assert result.returncode == 1
+    assert "Failed to parse JSON" in result.stderr
+
+def test_push_feedback_ignore_non_feedback():
+    payload = json.dumps({"type": "DISCOVERY", "data": {}})
+    result = subprocess.run(
+        ["python", "src/infrastructure/bridge/push_feedback.py", payload],
+        capture_output=True, text=True
+    )
+    assert result.returncode == 0
+    assert "Ignored non-feedback payload type" in result.stderr or "Ignored non-feedback payload type" in result.stdout
+
+def test_push_feedback_missing_fields():
+    payload = json.dumps({"type": "FEEDBACK", "data": {"from_node_id": "123"}})
+    result = subprocess.run(
+        ["python", "src/infrastructure/bridge/push_feedback.py", payload],
+        capture_output=True, text=True
+    )
+    assert result.returncode == 1
+    assert "Missing required fields" in result.stderr
