@@ -457,7 +457,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: -1372625422
   m_Radius: 0.5
-  m_Speed: 30
+  m_Speed: 20
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
@@ -507,6 +507,8 @@ MonoBehaviour:
   isActiveControlled: 0
   manualMoveSpeed: 30
   manualTurnSpeed: 120
+  waypointArrivalRadius: 5
+  finalArrivalRadius: 3
 --- !u!114 &-6649797809809280614
 MonoBehaviour:
   m_ObjectHideFlags: 0
