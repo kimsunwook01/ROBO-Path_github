@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import os
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -9,7 +10,20 @@ from src.infrastructure.database.supabase_edge_repo import SupabaseEdgeRepositor
 from src.application.services.feedback_aggregation_service import FeedbackAggregationService
 from src.domain.models import MissionLog, Robot
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# 로그를 파일에도 기록 (Unity 서브프로세스로 실행될 때 콘솔 출력이 유실되는 경우를 대비)
+_log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "logs")
+_log_dir = os.path.abspath(_log_dir)
+os.makedirs(_log_dir, exist_ok=True)
+_log_file = os.path.join(_log_dir, "push_feedback.log")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(_log_file, mode="a", encoding="utf-8"),
+    ],
+)
 logger = logging.getLogger(__name__)
 
 def main():

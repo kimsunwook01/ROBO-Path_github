@@ -20,23 +20,30 @@ namespace ROBOPath.Robot
         public float manualTurnSpeed = 10f;
 
         [Header("Waypoint Navigation")]
-        public float waypointArrivalRadius = 5.0f;  // 웨이포인트 도달 판정 반경 (m)
-        public float finalArrivalRadius = 3.0f;      // 최종 목적지 도달 판정 반경 (m)
+        [Tooltip("Inspector 값에 관계없이 Awake에서 코드 기본값으로 재설정됨")]
+        public float waypointArrivalRadius = 8.0f;
+        public float finalArrivalRadius = 8.0f;
 
         private string fromNodeId = "BASE";
         private string toNodeId = "unknown";
 
-        // 웨이포인트 내비게이션
         private Queue<Vector3> waypointQueue = new Queue<Vector3>();
         private Vector3? currentWaypoint = null;
         private string finalDestNodeId = "unknown";
         private bool isNavigating = false;
+        private int currentWaypointIndex = 0;
+        private int totalWaypoints = 0;
 
         void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
             identify = GetComponent<RobotIdentify>();
             telemetrySink = GetComponent<ITelemetrySink>();
+
+            // public 필드는 Inspector/프리팹에 직렬화된 값이 코드 기본값을 덮어쓰므로,
+            // 여기서 코드 값으로 강제 재설정한다 (Inspector를 직접 안 만져도 적용됨).
+            waypointArrivalRadius = 8.0f;
+            finalArrivalRadius = 8.0f;
         }
 
         void Update()
@@ -55,14 +62,9 @@ namespace ROBOPath.Robot
         {
             isManualMode = !isManualMode;
             if (isManualMode)
-            {
                 agent.ResetPath();
-            }
-            else
-            {
-                if (currentWaypoint.HasValue)
-                    NavigateToCurrentWaypoint();
-            }
+            else if (currentWaypoint.HasValue)
+                NavigateToCurrentWaypoint();
         }
 
         private void HandleManualMovement()
@@ -99,9 +101,6 @@ namespace ROBOPath.Robot
             }
         }
 
-        /// <summary>
-        /// A* 경로의 웨이포인트들을 순서대로 따라가도록 설정.
-        /// </summary>
         public void SetDestinationWithWaypoints(Vector3[] waypoints, string destNodeId)
         {
             manualInterventionOccurred = false;
@@ -113,14 +112,13 @@ namespace ROBOPath.Robot
             finalDestNodeId = destNodeId;
             toNodeId = destNodeId;
             isNavigating = true;
+            totalWaypoints = waypoints.Length;
+            currentWaypointIndex = 0;
 
             Debug.Log($"[RobotController] {identify.robotId}: received {waypoints.Length} waypoints -> {destNodeId}");
             AdvanceToNextWaypoint();
         }
 
-        /// <summary>
-        /// 단일 목적지로 직접 이동 (하위 호환).
-        /// </summary>
         public void SetDestination(Vector3 dest, string targetNodeId = "unknown")
         {
             manualInterventionOccurred = false;
@@ -129,6 +127,8 @@ namespace ROBOPath.Robot
             finalDestNodeId = targetNodeId;
             toNodeId = targetNodeId;
             isNavigating = true;
+            totalWaypoints = 1;
+            currentWaypointIndex = 0;
             AdvanceToNextWaypoint();
         }
 
@@ -142,6 +142,7 @@ namespace ROBOPath.Robot
             }
 
             currentWaypoint = waypointQueue.Dequeue();
+            currentWaypointIndex++;
             NavigateToCurrentWaypoint();
         }
 
@@ -151,12 +152,22 @@ namespace ROBOPath.Robot
             agent.SetDestination(currentWaypoint.Value);
         }
 
+        /// <summary>
+        /// 수평 거리(XZ)만으로 웨이포인트 도달을 판정한다.
+        /// Y축(높이)은 무시 — 타일 중심 좌표와 NavMesh 표면 높이가 다를 수 있기 때문.
+        /// </summary>
+        private float HorizontalDistance(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x;
+            float dz = a.z - b.z;
+            return Mathf.Sqrt(dx * dx + dz * dz);
+        }
+
         private void CheckWaypointReached()
         {
             if (!currentWaypoint.HasValue) return;
 
-            // NavMeshAgent 내부 상태 대신 물리적 거리를 직접 측정
-            float dist = Vector3.Distance(transform.position, currentWaypoint.Value);
+            float dist = HorizontalDistance(transform.position, currentWaypoint.Value);
             bool isFinalWaypoint = (waypointQueue.Count == 0);
             float threshold = isFinalWaypoint ? finalArrivalRadius : waypointArrivalRadius;
 
@@ -166,11 +177,10 @@ namespace ROBOPath.Robot
 
                 if (isFinalWaypoint)
                 {
-                    // 최종 목적지 도착: 피드백 발생
                     currentWaypoint = null;
                     isNavigating = false;
 
-                    Debug.Log($"[RobotController] {identify.robotId}: reached final destination {finalDestNodeId}");
+                    Debug.Log($"[RobotController] {identify.robotId}: ARRIVED at {finalDestNodeId} (dist={dist:F1}m)");
 
                     if (!manualInterventionOccurred && telemetrySink != null)
                     {
@@ -182,13 +192,34 @@ namespace ROBOPath.Robot
                         }
 
                         FeedbackMetrics metrics = FeedbackCalculator.ComputeMetrics(identify.platform, terrainTag);
+                        Debug.Log($"[RobotController] {identify.robotId}: emitting FEEDBACK (terrain={terrainTag}, L={metrics.L}, S={metrics.S}, E={metrics.E})");
                         telemetrySink.EmitFeedback(identify.platform, fromNodeId, finalDestNodeId, metrics.L, metrics.S, metrics.E);
                         fromNodeId = finalDestNodeId;
+                    }
+                    else
+                    {
+                        if (telemetrySink == null)
+                            Debug.LogWarning($"[RobotController] {identify.robotId}: telemetrySink is NULL — feedback not sent");
                     }
                 }
                 else
                 {
-                    // 중간 웨이포인트: 피드백 없이 다음으로
+                    AdvanceToNextWaypoint();
+                }
+            }
+            else
+            {
+                // 디버그: NavMeshAgent가 멈춰있는데 아직 도달 못 한 경우
+                if (!agent.pathPending && !agent.hasPath && agent.velocity.sqrMagnitude < 0.01f)
+                {
+                    Debug.LogWarning($"[RobotController] {identify.robotId}: STUCK at wp {currentWaypointIndex}/{totalWaypoints} " +
+                        $"dist={dist:F1}m (threshold={threshold:F1}m) " +
+                        $"robot=({transform.position.x:F1},{transform.position.y:F1},{transform.position.z:F1}) " +
+                        $"target=({currentWaypoint.Value.x:F1},{currentWaypoint.Value.y:F1},{currentWaypoint.Value.z:F1})");
+
+                    // 도달하지 못한 웨이포인트를 건너뛰고 다음으로 진행
+                    Debug.LogWarning($"[RobotController] {identify.robotId}: skipping unreachable waypoint, advancing...");
+                    agent.ResetPath();
                     AdvanceToNextWaypoint();
                 }
             }
