@@ -13,9 +13,9 @@ GameObject:
   - component: {fileID: 8745689826661715386}
   - component: {fileID: 4980650735609561328}
   - component: {fileID: 2960788521046588035}
-  - component: {fileID: -8056744842247469308}
   - component: {fileID: 4565314862891173986}
   - component: {fileID: -526937595616995810}
+  - component: {fileID: 2328634517976588000}
   m_Layer: 8
   m_Name: Robot_Legged
   m_TagString: Untagged
@@ -52,6 +52,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: ROBOPath.Robot::RobotIdentify
   platform: 1
+  robotId: 
+  homeStationId: 
 --- !u!54 &8745689826661715386
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -122,18 +124,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 5, y: 5, z: 8}
   m_Center: {x: 0, y: 3, z: 0}
---- !u!114 &-8056744842247469308
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1608190724462020645}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27f6a71934fdac340809e8fa3a98aa35, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: ROBOPath.Robot::ROBOPath.Robot.LogTelemetrySink
 --- !u!114 &4565314862891173986
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -148,6 +138,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ROBOPath.Robot::ROBOPath.Robot.RobotController
   isManualMode: 0
   manualInterventionOccurred: 0
+  isActiveControlled: 0
   manualMoveSpeed: 25
   manualTurnSpeed: 120
 --- !u!114 &-526937595616995810
@@ -167,6 +158,18 @@ MonoBehaviour:
   maxDistance: 30
   numRays: 36
   angleSpan: 180
+--- !u!114 &2328634517976588000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608190724462020645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15b087becdca31843b987b02d0cc92b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ROBOPath.Network.SubprocessTelemetrySink
 --- !u!1 &2732925360488165323
 GameObject:
   m_ObjectHideFlags: 0
