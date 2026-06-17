@@ -50,7 +50,7 @@ namespace ROBOPath.Network
             }
 
             cancellationTokenSource = new CancellationTokenSource();
-            string uri = $"http://localhost:{port}/";
+            string uri = $"http://127.0.0.1:{port}/";
             StartServer(uri);
         }
 
@@ -74,7 +74,7 @@ namespace ROBOPath.Network
                 try
                 {
                     HttpListenerContext context = await httpListener.GetContextAsync();
-                    if (context.Request.IsWebSocketRequest)
+                    if (context.Request.HttpMethod == "POST")
                     {
                         ProcessWebSocketRequest(context);
                     }
@@ -101,59 +101,34 @@ namespace ROBOPath.Network
         {
             try
             {
-                HttpListenerWebSocketContext wsContext = await context.AcceptWebSocketAsync(subProtocol: null);
-                WebSocket webSocket = wsContext.WebSocket;
-                Debug.Log("WebSocket Client Connected.");
-
-                await ReceiveMessages(webSocket);
+                if (context.Request.HttpMethod == "POST")
+                {
+                    using (var reader = new System.IO.StreamReader(context.Request.InputStream, context.Request.ContentEncoding ?? Encoding.UTF8))
+                    {
+                        string message = await reader.ReadToEndAsync();
+                        messageQueue.Enqueue(message);
+                    }
+                    context.Response.StatusCode = 200;
+                    byte[] response = Encoding.UTF8.GetBytes("OK");
+                    context.Response.ContentLength64 = response.Length;
+                    await context.Response.OutputStream.WriteAsync(response, 0, response.Length);
+                    context.Response.Close();
+                }
+                else
+                {
+                    context.Response.StatusCode = 405; // Method Not Allowed
+                    context.Response.Close();
+                }
             }
             catch (Exception e)
             {
-                Debug.LogError($"WebSocket Accept Error: {e.Message}");
+                Debug.LogError($"HTTP Post Accept Error: {e.Message}");
                 context.Response.StatusCode = 500;
                 context.Response.Close();
             }
         }
 
-        private async Task ReceiveMessages(WebSocket webSocket)
-        {
-            byte[] buffer = new byte[4096];
-            try
-            {
-                while (webSocket.State == WebSocketState.Open && !cancellationTokenSource.IsCancellationRequested)
-                {
-                    WebSocketReceiveResult result = await webSocket.ReceiveAsync(
-                        new ArraySegment<byte>(buffer), cancellationTokenSource.Token);
-
-                    if (result.MessageType == WebSocketMessageType.Close)
-                    {
-                        await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
-                        Debug.Log("WebSocket Client Disconnected.");
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Text)
-                    {
-                        string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        messageQueue.Enqueue(message);
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // 정상 종료
-            }
-            catch (Exception e)
-            {
-                if (webSocket.State != WebSocketState.Closed && webSocket.State != WebSocketState.Aborted)
-                {
-                    Debug.LogError($"WebSocket Receive Error: {e.Message}");
-                }
-            }
-            finally
-            {
-                if (webSocket != null)
-                    webSocket.Dispose();
-            }
-        }
+        // ReceiveMessages was removed because we now use HTTP POST directly
 
         void Update()
         {

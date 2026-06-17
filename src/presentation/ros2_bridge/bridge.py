@@ -2,48 +2,46 @@ import os
 import json
 import asyncio
 import logging
-import websockets
+import urllib.request
+import urllib.error
 
 logger = logging.getLogger(__name__)
 
 class UnityWebSocketBridge:
     """
-    Phase 4 Path 1: Python -> Unity 명령 송신을 위한 WebSocket 클라이언트.
+    Phase 4 Path 1: Python -> Unity 명령 송신을 위한 클라이언트.
     .env의 SIMULATOR_HOST 및 SIMULATOR_WS_PORT를 사용하여 접속하며,
     장애물 토글(HAZARD_TOGGLE) 등의 제어 명령을 보냅니다.
+    (Mono의 HttpListener WebSocket 미지원 버그 우회를 위해 HTTP POST 방식으로 변경됨)
     """
     def __init__(self):
-        self.host = os.getenv("SIMULATOR_HOST", "localhost")
+        self.host = os.getenv("SIMULATOR_HOST", "127.0.0.1")
         self.port = os.getenv("SIMULATOR_WS_PORT", "8765")
-        self.uri = f"ws://{self.host}:{self.port}/"
-        self.websocket = None
+        self.uri = f"http://{self.host}:{self.port}/"
 
     async def connect(self):
-        try:
-            self.websocket = await websockets.connect(self.uri)
-            logger.info(f"Connected to Unity WebSocket server at {self.uri}")
-        except Exception as e:
-            logger.error(f"Failed to connect to Unity WebSocket server at {self.uri}: {e}")
+        # HTTP는 연결 유지가 필요 없음
+        logger.info(f"Targeting Unity Server at {self.uri}")
 
     async def disconnect(self):
-        if self.websocket:
-            await self.websocket.close()
-            logger.info("Disconnected from Unity WebSocket server.")
+        pass
 
     async def send_command(self, command: dict):
-        if not self.websocket or self.websocket.closed:
-            logger.warning("WebSocket is not connected. Attempting to reconnect...")
-            await self.connect()
+        try:
+            payload = json.dumps(command).encode('utf-8')
+            req = urllib.request.Request(self.uri, data=payload, method='POST')
+            req.add_header('Content-Type', 'application/json')
             
-        if self.websocket and not self.websocket.closed:
-            try:
-                payload = json.dumps(command)
-                await self.websocket.send(payload)
-                logger.info(f"Sent command to Unity: {payload}")
-            except Exception as e:
-                logger.error(f"Failed to send command: {e}")
-        else:
-            logger.error("Could not send command: WebSocket connection unavailable.")
+            # 비동기 환경에서 동기 블로킹 호출이지만, 로컬 통신이므로 임시로 직접 호출
+            with urllib.request.urlopen(req, timeout=2.0) as response:
+                if response.status == 200:
+                    logger.info(f"Sent command to Unity: {payload.decode('utf-8')}")
+                else:
+                    logger.error(f"Failed to send command. Status: {response.status}")
+        except urllib.error.URLError as e:
+            logger.error(f"Could not send command: {e}")
+        except Exception as e:
+            logger.error(f"Failed to send command: {e}")
 
     async def toggle_hazards(self, active: bool):
         """
@@ -90,5 +88,7 @@ if __name__ == "__main__":
         )
         
         await bridge.disconnect()
+        
+    asyncio.run(main())
         
     asyncio.run(main())
