@@ -50,7 +50,7 @@ namespace ROBOPath.Network
             }
 
             cancellationTokenSource = new CancellationTokenSource();
-            string uri = $"http://+:{port}/";
+            string uri = $"http://localhost:{port}/";
             StartServer(uri);
         }
 
