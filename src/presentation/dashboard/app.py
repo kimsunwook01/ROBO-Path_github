@@ -56,14 +56,36 @@ def get_badge_class(status):
     return f"badge-{status.lower()}"
 
 # --- 데이터 로드 ---
-robots = get_robots()
+robots = list(get_robots())
+# Dummy Data 추가 (스크롤 테스트용)
+for i in range(10, 20):
+    robots.append({
+        "id": f"r{i}", "name": f"Wheeled-{i}", "platform": "wheeled",
+        "status": "Idle", "battery_pct": 100.0, "current_speed_mps": 0.0,
+        "current_mission_id": None,
+    })
+
 fleet_breakdown = get_fleet_breakdown()
-missions = get_missions()
+missions = list(get_missions())
+# Dummy Data 추가 (스크롤 테스트용)
+for i in range(10, 20):
+    missions.append({
+        "id": f"m{i}", "robot_name": f"Wheeled-{i}", "mission_type": "Delivery",
+        "status": "Completed", "started_at": "2026-06-17T10:30:00Z",
+        "completed_at": "2026-06-17T10:45:00Z", "accumulated_cost": 350.0,
+    })
+
 sim_status = get_simulator_status()
 
 # --- 상태 관리 (세션) ---
 if 'selected_robot_id' not in st.session_state:
     st.session_state.selected_robot_id = robots[0]['id']
+
+if 'show_left' not in st.session_state:
+    st.session_state.show_left = True
+
+if 'show_right' not in st.session_state:
+    st.session_state.show_right = True
 
 # --- 상단 배너 (Simulator Status) ---
 if not sim_status["is_online"]:
@@ -72,57 +94,83 @@ else:
     # 간이 표시 (원하면 뺄 수 있음)
     st.caption(f"🟢 Simulator Online (Last Heartbeat: {sim_status['last_heartbeat']})")
 
-# --- 3분할 레이아웃 ---
-col_left, col_center, col_right = st.columns([1, 2, 1])
+# --- 레이아웃 토글 논리 ---
+if st.session_state.show_left and st.session_state.show_right:
+    col_left, col_center, col_right = st.columns([1, 2, 1])
+elif st.session_state.show_left and not st.session_state.show_right:
+    col_left, col_center = st.columns([1, 3])
+    col_right = None
+elif not st.session_state.show_left and st.session_state.show_right:
+    col_center, col_right = st.columns([3, 1])
+    col_left = None
+else:
+    col_center = st.container()
+    col_left = None
+    col_right = None
 
 # ==========================================
 # 1. 좌측 사이드바: 로봇 플릿 목록 (Fleet Status)
 # ==========================================
-with col_left:
-    st.subheader("Fleet Status")
-    
-    # 필터
-    f_col1, f_col2 = st.columns(2)
-    with f_col1:
-        plat_filter = st.multiselect("Platform", ["wheeled", "legged"], default=["wheeled", "legged"])
-    with f_col2:
-        stat_filter = st.multiselect("Status", ["Idle", "Charging", "Delivery", "Exploring", "Returning"], 
-                                     default=["Idle", "Charging", "Delivery", "Exploring", "Returning"])
-    
-    filtered_robots = [r for r in robots if r['platform'] in plat_filter and r['status'] in stat_filter]
-    
-    st.markdown("---")
-    for r in filtered_robots:
-        # 배터리 바 색상 조정
-        bat_color = "normal"
-        if r['battery_pct'] < 20: bat_color = "error"
-        elif r['battery_pct'] < 50: bat_color = "warning"
+if col_left:
+    with col_left:
+        st.subheader("Fleet Status")
         
-        # 선택 버튼 (State 업데이트용)
-        is_selected = "🔵 " if st.session_state.selected_robot_id == r['id'] else ""
+        # 필터 (스크롤되지 않는 영역)
+        f_col1, f_col2 = st.columns(2)
+        with f_col1:
+            plat_filter = st.multiselect("Platform", ["wheeled", "legged"], default=["wheeled", "legged"])
+        with f_col2:
+            stat_filter = st.multiselect("Status", ["Idle", "Charging", "Delivery", "Exploring", "Returning"], 
+                                         default=["Idle", "Charging", "Delivery", "Exploring", "Returning"])
         
-        # HTML 카드
-        badge_html = f'<span class="badge {get_badge_class(r["status"])}">{r["status"]}</span>'
-        icon = "🚗" if r['platform'] == "wheeled" else "🐕"
+        filtered_robots = [r for r in robots if r['platform'] in plat_filter and r['status'] in stat_filter]
         
-        st.markdown(f"""
-        <div class="robot-card">
-            <div class="robot-title">{is_selected}{icon} {r['name']}</div>
-            <div style="margin-bottom: 5px;">{badge_html}</div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.progress(int(r['battery_pct']), text=f"Battery: {r['battery_pct']}%")
+        st.markdown("---")
         
-        if st.button(f"Select {r['name']}", key=f"btn_{r['id']}"):
-            st.session_state.selected_robot_id = r['id']
-            st.rerun()
+        # 로봇 카드 리스트 (스크롤 영역)
+        with st.container(height=650):
+            for r in filtered_robots:
+                # 배터리 바 색상 조정
+                bat_color = "normal"
+                if r['battery_pct'] < 20: bat_color = "error"
+                elif r['battery_pct'] < 50: bat_color = "warning"
+                
+                # 선택 버튼 (State 업데이트용)
+                is_selected = "🔵 " if st.session_state.selected_robot_id == r['id'] else ""
+                
+                # HTML 카드
+                badge_html = f'<span class="badge {get_badge_class(r["status"])}">{r["status"]}</span>'
+                icon = "🚗" if r['platform'] == "wheeled" else "🐕"
+                
+                st.markdown(f"""
+                <div class="robot-card">
+                    <div class="robot-title">{is_selected}{icon} {r['name']}</div>
+                    <div style="margin-bottom: 5px;">{badge_html}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.progress(int(r['battery_pct']), text=f"Battery: {r['battery_pct']}%")
+                
+                if st.button(f"Select {r['name']}", key=f"btn_{r['id']}"):
+                    st.session_state.selected_robot_id = r['id']
+                    st.rerun()
 
 # ==========================================
 # 2. 중앙 메인: 맵 및 텔레메트리
 # ==========================================
 with col_center:
-    selected_robot = next((r for r in robots if r['id'] == st.session_state.selected_robot_id), robots[0])
-    st.subheader(f"Telemetry & Map View: {selected_robot['name']}")
+    # --- 헤더 및 토글 버튼 ---
+    head_l, head_c, head_r = st.columns([1, 10, 1])
+    with head_l:
+        if st.button("▶" if not st.session_state.show_left else "◀", key="toggle_left"):
+            st.session_state.show_left = not st.session_state.show_left
+            st.rerun()
+    with head_c:
+        selected_robot = next((r for r in robots if r['id'] == st.session_state.selected_robot_id), robots[0])
+        st.subheader(f"Telemetry & Map View: {selected_robot['name']}")
+    with head_r:
+        if st.button("◀" if not st.session_state.show_right else "▶", key="toggle_right"):
+            st.session_state.show_right = not st.session_state.show_right
+            st.rerun()
     
     # 텔레메트리 (Toolbar)
     t_col1, t_col2, t_col3, t_col4 = st.columns(4)
@@ -134,7 +182,6 @@ with col_center:
     # 연관 미션 정보 찾기
     cur_mission = next((m for m in missions if m['id'] == selected_robot['current_mission_id']), None)
     if cur_mission:
-        # 경과 시간 계산 (가짜)
         st_time = datetime.fromisoformat(cur_mission['started_at'].replace('Z', '+00:00'))
         elapsed = "15m 30s" # 목업 고정값
         cost = cur_mission['accumulated_cost']
@@ -164,7 +211,6 @@ with col_center:
     import numpy as np
     grid_size = 20
     z_data = np.random.choice([0, 1, 2], size=(grid_size, grid_size), p=[0.7, 0.2, 0.1])
-    # 0: Unexplored/Empty, 1: Explored Flat, 2: Obstacle/Stair
     
     # 로봇 위치(가짜)
     rx, ry = 10, 10
@@ -184,51 +230,55 @@ with col_center:
 # ==========================================
 # 3. 우측 사이드바: 분석 및 로그 (Analytics & Logs)
 # ==========================================
-with col_right:
-    # 🚨 미확인 실패 알림
-    failed_count = sum(1 for m in missions if m['status'] == 'Failed')
-    st.subheader(f"Analytics & Logs 🚨({failed_count})")
-    
-    # Fleet Breakdown Donut Chart
-    st.markdown("**Fleet Task Breakdown**")
-    labels = list(fleet_breakdown.keys())
-    values = list(fleet_breakdown.values())
-    
-    # 색상 매핑
-    color_map = {
-        "Idle": "#9CA3AF",
-        "Charging": "#10B981",
-        "Delivery": "#F59E0B",
-        "Exploring": "#0EA5E9",
-        "Returning": "#8B5CF6"
-    }
-    pie_colors = [color_map.get(l, "#FFFFFF") for l in labels]
-    
-    fig_pie = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.5, marker=dict(colors=pie_colors))])
-    fig_pie.update_layout(
-        paper_bgcolor="#0B0F19",
-        plot_bgcolor="#0B0F19",
-        margin=dict(l=20, r=20, t=20, b=20),
-        font=dict(color="#F8FAFC"),
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
-    )
-    st.plotly_chart(fig_pie, use_container_width=True)
-    
-    st.markdown("---")
-    st.markdown("**Mission Logs**")
-    
-    m_filter = st.selectbox("Status Filter", ["All", "Pending", "Active", "Completed", "Failed"])
-    filtered_missions = missions if m_filter == "All" else [m for m in missions if m['status'] == m_filter]
-    
-    for m in filtered_missions:
-        badge_html = f'<span class="badge {get_badge_class(m["status"])}">{m["status"]}</span>'
-        st.markdown(f"""
-        <div style="background-color: #1A2235; padding: 10px; border-radius: 5px; margin-bottom: 8px; border-left: 4px solid {color_map.get(m['status'], '#38BDF8') if m['status'] in color_map else ('#EF4444' if m['status']=='Failed' else '#10B981')};">
-            <div style="font-size:0.9em; margin-bottom:4px;"><b>{m['robot_name']}</b> ({m['mission_type']})</div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                {badge_html}
-                <span style="font-size:0.8em; color:#94A3B8;">Cost: {m['accumulated_cost']}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+if col_right:
+    with col_right:
+        # 🚨 미확인 실패 알림
+        failed_count = sum(1 for m in missions if m['status'] == 'Failed')
+        st.subheader(f"Analytics & Logs 🚨({failed_count})")
+        
+        # Fleet Breakdown Donut Chart (고정 영역)
+        st.markdown("**Fleet Task Breakdown**")
+        labels = list(fleet_breakdown.keys())
+        values = list(fleet_breakdown.values())
+        
+        # 색상 매핑
+        color_map = {
+            "Idle": "#9CA3AF",
+            "Charging": "#10B981",
+            "Delivery": "#F59E0B",
+            "Exploring": "#0EA5E9",
+            "Returning": "#8B5CF6"
+        }
+        pie_colors = [color_map.get(l, "#FFFFFF") for l in labels]
+        
+        fig_pie = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.5, marker=dict(colors=pie_colors))])
+        fig_pie.update_layout(
+            paper_bgcolor="#0B0F19",
+            plot_bgcolor="#0B0F19",
+            margin=dict(l=20, r=20, t=20, b=20),
+            font=dict(color="#F8FAFC"),
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+        
+        st.markdown("---")
+        st.markdown("**Mission Logs**")
+        
+        # 필터 (고정 영역)
+        m_filter = st.selectbox("Status Filter", ["All", "Pending", "Active", "Completed", "Failed"])
+        filtered_missions = missions if m_filter == "All" else [m for m in missions if m['status'] == m_filter]
+        
+        # 로그 리스트 (스크롤 영역)
+        with st.container(height=350):
+            for m in filtered_missions:
+                badge_html = f'<span class="badge {get_badge_class(m["status"])}">{m["status"]}</span>'
+                st.markdown(f"""
+                <div style="background-color: #1A2235; padding: 10px; border-radius: 5px; margin-bottom: 8px; border-left: 4px solid {color_map.get(m['status'], '#38BDF8') if m['status'] in color_map else ('#EF4444' if m['status']=='Failed' else '#10B981')};">
+                    <div style="font-size:0.9em; margin-bottom:4px;"><b>{m['robot_name']}</b> ({m['mission_type']})</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        {badge_html}
+                        <span style="font-size:0.8em; color:#94A3B8;">Cost: {m['accumulated_cost']}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
