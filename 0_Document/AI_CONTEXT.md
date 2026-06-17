@@ -127,14 +127,18 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
       - `Tile_Hazard.prefab`에 컴포넌트 부착 완료
       - EditMode 테스트 4개 추가 (비표시/표시/토글/Collider 유지)
       - **테스트 현황: EditMode 10/10 + PlayMode 7/7 = 총 17개, Failed 0**
-  - [ ] [Phase 4] Unity 내장 WebSocket 서버(`WebSocketServer.cs`) 및 C# Python 브릿지(Supabase 적재) 로직 작성
+  - [ ] [Phase 4] Unity 통신 브릿지 (명령: WebSocket 수신, 피드백: Subprocess 송신 - 3-Way Bridge 아키텍처 적용)
+    - [x] 피드백 파이프라인 (Unity $\rightarrow$ Python Subprocess $\rightarrow$ Supabase) 기반 확립 (`push_feedback.py`)
+    - [x] RLS(Row Level Security) 쓰기 권한 우회를 위한 `service_role` 클라이언트 적용
   - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
-  - [x] [Phase 1] Supabase-Streamlit 데이터 연동 검증 및 테이블 출력 (`app.py`) - **완료**
-  - [ ] [Phase 2] Streamlit $\rightarrow$ Unity 통신용 Python WebSocket 클라이언트(`ros2_bridge/bridge.py`) 작성
-  - [ ] [Phase 3] Plotly 2D 지도 시각화 (BASE, DISCOVERED 노드 및 로봇 현재 위치)
-  - [ ] [Phase 4] A* 경로 탐색 UI (플랫폼 선택, 출발지/목적지, 경로 하이라이트 및 시뮬레이션 명령 송신)
-  - [ ] [Phase 5] Supabase Realtime 구독으로 지도 실시간 업데이트
+  - [x] Data Contract 정의 (`ROBO-Path_Dashboard_Data_Contract.md`)
+  - [x] Streamlit 관제 대시보드 1차 UI 목업 구현 (`app.py`, 3분할 독립 스크롤 레이아웃 및 토글 기능 완성)
+  - [ ] [Spec A] 임무 시스템 (Pickup $\rightarrow$ Delivery) 및 목적지 자동 배정 로직 구현
+  - [ ] [Spec B] 로봇 상태/배터리 모델링 및 `robots` DB 동기화
+  - [ ] [Spec C] Discovery 텔레메트리 파이프라인(Raycast 탐색 결과 $\rightarrow$ `nodes.is_discovered`) 연동
+  - [ ] [Spec D] 대시보드 Mock 데이터를 실제 Supabase 쿼리로 교체 (DB 연동)
+  - [ ] [Spec E] Streamlit $\rightarrow$ Unity 통신용 Python WebSocket 클라이언트(`ros2_bridge/bridge.py`) 및 실시간 명령 송신
 - [x] **9. 에지 서버(라즈베리파이) 인프라 구현 (`src/infrastructure/storage/`)**
   - [x] GitHub Actions CI/CD 구축, SSD 마운트, FastAPI 구현, Systemd/Nginx 세팅 완료
 
