@@ -56,7 +56,8 @@ class MapImportService:
                 z=pos["z"],
                 name=f"Station_{node_id[:8]}",
                 location_usage=n.get("usage", "station"),
-                terrain_tag=n.get("tag", "Node_Destination")
+                terrain_tag=n.get("tag", "Node_Destination"),
+                is_discovered=True  # 거점은 처음부터 알려진 주소지이므로 항상 발견됨
             )
             node_models.append(base_loc)
             node_dict[node_id] = base_loc
@@ -77,7 +78,8 @@ class MapImportService:
                 y=pos["y"],
                 z=pos["z"],
                 node_type="BASE",
-                terrain_tag=t.get("terrain_type", "Terrain_Flat")
+                terrain_tag=t.get("terrain_type", "Terrain_Flat"),
+                is_discovered=False  # 일반 타일은 아직 미탐색 (로봇이 Raycast로 발견해야 true)
             )
             node_models.append(node)
             node_dict[tile_id] = node

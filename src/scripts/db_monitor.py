@@ -91,6 +91,18 @@ def snapshot(client, log_handle):
     except Exception as e:
         lines.append(f"[MISSIONS] 조회 실패: {e}")
 
+    # discovery 통계 (Spec C — Fog of War)
+    try:
+        # 발견된 노드 수 (count 옵션으로 전체 개수만 효율적으로 조회)
+        disc_resp = client.table("nodes").select("id", count="exact").eq("is_discovered", True).execute()
+        total_resp = client.table("nodes").select("id", count="exact").execute()
+        disc_count = disc_resp.count if disc_resp.count is not None else len(disc_resp.data)
+        total_count = total_resp.count if total_resp.count is not None else len(total_resp.data)
+        lines.append(f"[DISCOVERY] 발견된 노드: {disc_count} / 전체 {total_count} "
+                     f"(거점 34개 제외 시 일반 타일 발견: {disc_count - 34})")
+    except Exception as e:
+        lines.append(f"[DISCOVERY] 조회 실패: {e}")
+
     text = "\n".join(lines)
     print(text)
     log_handle.write(text + "\n")

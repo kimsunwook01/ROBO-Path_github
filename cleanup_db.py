@@ -1,3 +1,10 @@
+import sys
+import os
+# 프로젝트 루트를 sys.path에 추가 (이 파일은 루트에 있으므로 자기 디렉터리 기준)
+_root = os.path.dirname(os.path.abspath(__file__))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
 from src.infrastructure.database.client import get_supabase_admin_client
 import logging
 

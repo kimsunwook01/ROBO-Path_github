@@ -84,11 +84,13 @@ namespace ROBOPath.Network
 
         public void EmitDiscovery(Vector3 nodePos)
         {
-            // Spec C(Discovery 파이프라인) 구현 전까지 서브프로세스를 호출하지 않음.
-            // RaycastScanner가 0.2초마다 수백 번 호출하므로, 여기서 서브프로세스를
-            // 띄우면 시스템이 먹통이 됨. push_feedback.py도 DISCOVERY를 무시하므로
-            // 호출해봐야 의미 없음.
-            // TODO: Spec C 구현 시 배치/스로틀 방식으로 변경
+            // Spec C: 처음 본 타일일 때만 RaycastScanner가 이 메서드를 호출한다
+            // (중복 제거는 RaycastScanner의 HashSet이 담당). 좌표를 push_feedback.py로 전달.
+            string json = $"{{\"x\":{nodePos.x},\"y\":{nodePos.y},\"z\":{nodePos.z}}}";
+            string finalJson = $"{{\"type\":\"DISCOVERY\",\"data\":{json}}}";
+
+            Debug.Log($"[SubprocessTelemetrySink] Sending DISCOVERY: ({nodePos.x:F1}, {nodePos.z:F1})");
+            FireAndForgetPython(finalJson);
         }
 
         private async void FireAndForgetPython(string jsonArgs)

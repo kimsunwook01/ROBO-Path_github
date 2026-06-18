@@ -17,6 +17,10 @@ class Node(BaseModel):
     terrain_tag: Optional[str] = Field(default=None, max_length=50)
     version_added: str = Field(default="v1.0.0", max_length=20)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    # Spec C — Fog of War: 로봇이 Raycast로 발견했는지 여부
+    is_discovered: bool = Field(default=False)
+    discovered_at: Optional[datetime] = Field(default=None)
+    discovery_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
 class BaseLocation(Node):
     """

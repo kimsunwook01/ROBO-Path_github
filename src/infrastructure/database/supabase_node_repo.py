@@ -72,7 +72,10 @@ class SupabaseNodeRepository(NodeRepository):
                     "node_type": n.node_type,
                     "terrain_tag": n.terrain_tag,
                     "version_added": n.version_added,
-                    "created_at": n.created_at.isoformat()
+                    "created_at": n.created_at.isoformat(),
+                    "is_discovered": n.is_discovered,
+                    "discovered_at": n.discovered_at.isoformat() if n.discovered_at else None,
+                    "discovery_confidence": n.discovery_confidence,
                 })
                 
                 # 자식 테이블용 필드 분류
@@ -106,4 +109,54 @@ class SupabaseNodeRepository(NodeRepository):
             return True
         except Exception as e:
             logger.error(f"Error in upsert_nodes: {e}", exc_info=True)
+            return False
+
+    def get_node_near(self, x: float, y: float, z: float, tolerance: float = 1.0) -> Optional[Node]:
+        """
+        좌표 범위(x±tol, z±tol) 필터로 노드를 조회한다.
+        타일은 10m 그리드 고정 위치라 tolerance 1m면 하나만 잡힌다.
+        여러 개면 가장 가까운 것을 반환.
+        """
+        try:
+            response = (
+                self.db.table("nodes")
+                .select("*")
+                .gte("x", x - tolerance).lte("x", x + tolerance)
+                .gte("z", z - tolerance).lte("z", z + tolerance)
+                .execute()
+            )
+            if not response.data:
+                return None
+
+            # 가장 가까운 노드 선택 (수평거리 기준)
+            best = None
+            best_dist_sq = float("inf")
+            for item in response.data:
+                dx = item["x"] - x
+                dz = item["z"] - z
+                d_sq = dx * dx + dz * dz
+                if d_sq < best_dist_sq:
+                    best_dist_sq = d_sq
+                    best = item
+
+            return self._map_to_node_model(best) if best else None
+        except Exception as e:
+            logger.error(f"Error in get_node_near ({x},{y},{z}): {e}", exc_info=True)
+            return None
+
+    def mark_discovered(self, node_id: str, confidence: float = 0.6) -> bool:
+        """
+        노드를 발견됨으로 표시. is_discovered=True, discovered_at=now(UTC), confidence 갱신.
+        """
+        from datetime import datetime, timezone
+        try:
+            payload = {
+                "is_discovered": True,
+                "discovered_at": datetime.now(timezone.utc).isoformat(),
+                "discovery_confidence": max(0.0, min(1.0, confidence)),
+            }
+            response = self.db.table("nodes").update(payload).eq("id", node_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error in mark_discovered {node_id}: {e}", exc_info=True)
             return False

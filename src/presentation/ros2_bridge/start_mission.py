@@ -1,5 +1,12 @@
 import logging
 import sys
+import os
+
+# 프로젝트 루트를 sys.path에 추가 (PYTHONPATH 없이 직접 실행 가능하게)
+_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+if _root not in sys.path:
+    sys.path.insert(0, _root)
+
 from src.infrastructure.database.client import get_supabase_admin_client
 from src.infrastructure.database.supabase_edge_repo import SupabaseEdgeRepository
 from src.infrastructure.database.supabase_mission_repo import SupabaseMissionRepository

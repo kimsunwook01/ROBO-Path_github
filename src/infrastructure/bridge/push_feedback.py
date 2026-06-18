@@ -26,6 +26,42 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
+def _handle_discovery(disc: dict):
+    """
+    DISCOVERY 페이로드 처리 (Spec C).
+    disc = {"x": float, "y": float, "z": float}
+    좌표 근처의 기존 노드를 찾아 is_discovered=True 로 표시한다.
+    """
+    x = disc.get("x")
+    y = disc.get("y")
+    z = disc.get("z")
+
+    if x is None or y is None or z is None:
+        logger.error(f"DISCOVERY payload missing coordinates: {disc}")
+        return
+
+    from src.infrastructure.database.supabase_node_repo import SupabaseNodeRepository
+    db_client = get_supabase_admin_client()
+    node_repo = SupabaseNodeRepository(db_client)
+
+    node = node_repo.get_node_near(x, y, z, tolerance=1.0)
+    if node is None:
+        logger.warning(f"DISCOVERY: no node near ({x:.1f}, {y:.1f}, {z:.1f}). Skipping.")
+        return
+
+    if node.is_discovered:
+        # 이미 발견된 노드는 재갱신 불필요 (중복 서브프로세스 호출 방지는 Unity가 하지만, 이중 안전장치)
+        logger.info(f"DISCOVERY: node {str(node.id)[:8]} already discovered. Skipping.")
+        return
+
+    ok = node_repo.mark_discovered(str(node.id), confidence=0.6)
+    if ok:
+        logger.info(f"DISCOVERY: node {str(node.id)[:8]} at ({node.x:.1f},{node.z:.1f}) marked discovered.")
+    else:
+        logger.error(f"DISCOVERY: failed to mark node {str(node.id)[:8]} discovered.")
+
+
 def main():
     if len(sys.argv) < 2:
         logger.error("No JSON payload provided.")
@@ -37,9 +73,18 @@ def main():
     except Exception as e:
         logger.error(f"Failed to parse JSON payload: {e}")
         sys.exit(1)
-        
-    if data.get("type") != "FEEDBACK":
-        logger.info(f"Ignored non-feedback payload type: {data.get('type')}")
+
+    payload_type = data.get("type")
+
+    # === DISCOVERY 분기 (Spec C) ===
+    # 로봇이 Raycast로 발견한 타일 좌표를 받아, 가장 가까운 기존 노드를
+    # '발견됨'으로 표시한다. FEEDBACK과 달리 임무/배터리 로직은 거치지 않는다.
+    if payload_type == "DISCOVERY":
+        _handle_discovery(data.get("data", {}))
+        sys.exit(0)
+
+    if payload_type != "FEEDBACK":
+        logger.info(f"Ignored unknown payload type: {payload_type}")
         sys.exit(0)
         
     import uuid
