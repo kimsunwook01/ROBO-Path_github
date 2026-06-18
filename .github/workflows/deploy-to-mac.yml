@@ -68,14 +68,28 @@ jobs:
             > "$HOME/Library/LaunchAgents/com.robopath.simulator.plist"
           chmod +x "$HOME/ROBO-Path_project/scripts/run_simulator.sh"
 
-      # Step 5: 헤드리스 시뮬레이터 재시작 (launchd)
-      #  - bootout(이미 로드 시 내림) → bootstrap → kickstart -k(강제 재시작)
+      # Step 5: 헤드리스 시뮬레이터 재시작 (launchd) — 멱등 처리
+      #  - 이미 로드돼 있어도 안전하게: bootout(무시) → bootstrap(무시) → kickstart -k 로 강제 재시작.
+      #  - 모든 launchctl 호출을 '|| true' 로 감싸고, 마지막에 print 로 로드 여부를 검증해
+      #    "이미 로드됨(Bootstrap failed: 5: I/O error)" 류 에러로 단계가 깨지지 않게 한다.
+      #  - kickstart -k 가 실제 '죽이고 재실행' 역할(최신 코드 반영)을 한다.
       - name: Restart headless simulator
         run: |
           UID_NUM="$(id -u)"
-          launchctl bootout "gui/$UID_NUM/com.robopath.simulator" 2>/dev/null || true
-          launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/com.robopath.simulator.plist"
-          launchctl kickstart -k "gui/$UID_NUM/com.robopath.simulator"
+          TARGET="gui/$UID_NUM/com.robopath.simulator"
+          PLIST="$HOME/Library/LaunchAgents/com.robopath.simulator.plist"
+          launchctl bootout "$TARGET" 2>/dev/null || true
+          sleep 2
+          launchctl bootstrap "gui/$UID_NUM" "$PLIST" 2>/dev/null || true
+          launchctl enable "$TARGET" 2>/dev/null || true
+          launchctl kickstart -k "$TARGET" 2>/dev/null || true
+          sleep 2
+          if launchctl print "$TARGET" >/dev/null 2>&1; then
+            echo "✅ 시뮬레이터 에이전트 재시작 완료: $TARGET"
+          else
+            echo "❌ 에이전트 미로드 (GUI 세션 로그인/plist 경로 확인 필요)"
+            exit 1
+          fi
 
       # Step 6: 배포 결과 리포트
       - name: Report deployment status
