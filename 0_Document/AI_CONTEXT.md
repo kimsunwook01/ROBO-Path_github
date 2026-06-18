@@ -160,7 +160,7 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
 
 ### ⚠️ 알려진 불일치 및 후속 정리 항목 (2026-06-19 코드베이스 전수 감사 기준)
 프로젝트 전체 파일 열람 검사에서 발견된, 추후 정리가 필요한 항목들:
-- **stale 테스트:** `tests/test_push_feedback.py`가 리팩터링 이전 동작(DISCOVERY를 "무시", 메시지 `"Ignored non-feedback payload type"`)을 기대해, 현재 `push_feedback.py`(DISCOVERY 정식 처리, `"Ignored unknown payload type"`)와 어긋남 → 일부 어서션 실패 가능. 테스트 갱신 필요.
+- **stale 테스트 (해결— 2026-06-19):** `tests/test_push_feedback.py` 정합화 완료. 감사 시점엔 1건만 stale로 판단했으나, 실제 실행 검증 결과 `push_feedback.py`의 로깅이 `StreamHandler(sys.stdout)`로 stdout에 찍히는데 어서션은 stderr를 보고 있어 4개 중 3개(invalid_json/ignore/missing_fields)가 실제로 깨져 있었고, DISCOVERY는 이제 정식 처리되어 과거 메시지가 폐기됨. 수정 내용: (1) 메시지 검사를 stdout+stderr 합산으로 전환, (2) DISCOVERY 정식 처리/unknown 무시 동작을 반영해 케이스 재작성, (3) 서브프로세스에 cwd/PYTHONPATH 주입으로 `from src...` 절대 임포트를 호출 환경과 무관하게 해결, (4) 실 DB 쓰기를 수반하는 해피패스는 `ROBOPATH_RUN_DB_TESTS` 옵트인으로 분리. 검증: 4 passed, 1 skipped.
 - **중복 마이그레이션:** `supabase/migrations/`에 동일 타임스탬프(20260618030000) `add_discovery.sql`과 `add_discovery_columns.sql` 공존. 후자가 정본(컬럼 + `idx_nodes_xz` 인덱스). 전자의 고유분(거점 `is_discovered` UPDATE)은 `map_import_service.py`의 import-time `is_discovered=True`와 기능 중복. → `add_discovery.sql` 삭제 권장(단, 원격 DB 마이그레이션 히스토리 정합성 확인 후).
 - **대시보드 맵 시각화:** `presentation/dashboard/app.py` 중앙 맵은 아직 랜덤 Plotly 목업이며 일부 텔레메트리(경과시간 등) 하드코딩. 데이터 계층(`mock_data.py`)은 실제 Supabase 연동 완료(Spec D). 맵 실연동은 후속 과제.
 - **LLM 파이프라인 (런타임 통합 제외 — 2026-06-19 결정):** `infrastructure/llm/gemini_client.py` 모듈은 구현됐으나 런타임 연동(incidents 적재 + 대시보드 분석 UI)은 미연결. LLM_Pipeline_Design 명세 범위(모듈 작성)와는 일치한다. **런타임 통합은 구현 우선순위가 낮아 현재 범위에서 의도적으로 제외**되었으며, '후속 과제'가 아닌 보류(De-scoped) 상태로 둔다. 우선순위가 재조정되면 재개한다.
