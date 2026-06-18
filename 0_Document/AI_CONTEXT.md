@@ -87,6 +87,7 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
   - [x] 주행 로그가 삽입되면 엣지 통계를 갱신하는 `FeedbackAggregationService` 작성
 - [x] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
   - [x] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
+  - [~] **런타임 통합 보류 (2026-06-19 결정):** 모듈(`gemini_client.py`) 작성까지만 완료하고, 런타임 연동(incidents 적재 + 대시보드 분석 UI + 엣지 페널티 환류)은 **현재 구현 범위에서 의도적으로 제외**한다. 본 프로젝트에서 LLM 파이프라인의 구현 우선순위가 낮다고 판단한 결정이며, 추후 우선순위가 재조정될 경우 재개한다.
 - [ ] **7. Unity 시뮬레이터 연동 및 구축 (`Unity/`)**
   - [x] [Phase 1] Unity 프로젝트 생성 및 GitHub 연동 (.gitignore 설정)
   - [x] [Phase 2] 메인 캠퍼스 맵 제작 및 파이프라인 구축 완료
@@ -127,10 +128,13 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
       - `Tile_Hazard.prefab`에 컴포넌트 부착 완료
       - EditMode 테스트 4개 추가 (비표시/표시/토글/Collider 유지)
       - **테스트 현황: EditMode 10/10 + PlayMode 7/7 = 총 17개, Failed 0**
-  - [ ] [Phase 4] Unity 통신 브릿지 (명령: WebSocket 수신, 피드백: Subprocess 송신 - 3-Way Bridge 아키텍처 적용)
-    - [x] 피드백 파이프라인 (Unity $\rightarrow$ Python Subprocess $\rightarrow$ Supabase) 기반 확립 (`push_feedback.py`)
+  - [x] [Phase 4] Unity 통신 브릿지 (명령: WebSocket 수신, 피드백: Subprocess 송신 - 3-Way Bridge 아키텍처 적용)
+    - [x] [STEP 1] Unity 명령 수신 서버 (`Network/WebSocketServer.cs`) — HAZARD_TOGGLE / ASSIGN_MISSION 처리. (명세는 WebSocket이었으나 실제 구현은 HTTP POST(HttpListener)로 단순화 — 클래스명만 WebSocketServer 유지)
+    - [x] [STEP 2] Python→Unity 명령 송신 브릿지 (`ros2_bridge/bridge.py`, HTTP POST) + `MissionAssignmentService` 연동 (A* 경로 → 웨이포인트 송신)
+    - [x] [STEP 3] Unity 피드백 송신 Sink (`Network/SubprocessTelemetrySink.cs`) — 도착/발견 시 `push_feedback.py` 서브프로세스 호출
+    - [x] [STEP 4] 피드백 파이프라인 (Unity $\rightarrow$ Python Subprocess $\rightarrow$ Supabase) 기반 확립 (`push_feedback.py`) — FEEDBACK/DISCOVERY 분기, 엣지 매핑+폴백, 연속 임무 재배정
     - [x] RLS(Row Level Security) 쓰기 권한 우회를 위한 `service_role` 클라이언트 적용
-  - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축
+  - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축 (self-hosted runner 필요, 미착수)
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
   - [x] Data Contract 정의 (`ROBO-Path_Dashboard_Data_Contract.md`)
   - [x] Streamlit 관제 대시보드 1차 UI 목업 구현 (`app.py`, 3분할 독립 스크롤 레이아웃 및 토글 기능 완성)
@@ -153,5 +157,12 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
     - 비고: 횡단보도 없이 도로로만 둘러싸인 목적지(현재 맵엔 없음) 및 장애물로 모든 경로 차단 시 → 향후 임무 실패/재배정 로직으로 대응(맵이 올바르게 동작한 증거). 보행 로봇은 도로 통행 가능하므로 그런 목적지 전담 가능.
 - [x] **9. 에지 서버(라즈베리파이) 인프라 구현 (`src/infrastructure/storage/`)**
   - [x] GitHub Actions CI/CD 구축, SSD 마운트, FastAPI 구현, Systemd/Nginx 세팅 완료
+
+### ⚠️ 알려진 불일치 및 후속 정리 항목 (2026-06-19 코드베이스 전수 감사 기준)
+프로젝트 전체 파일 열람 검사에서 발견된, 추후 정리가 필요한 항목들:
+- **stale 테스트:** `tests/test_push_feedback.py`가 리팩터링 이전 동작(DISCOVERY를 "무시", 메시지 `"Ignored non-feedback payload type"`)을 기대해, 현재 `push_feedback.py`(DISCOVERY 정식 처리, `"Ignored unknown payload type"`)와 어긋남 → 일부 어서션 실패 가능. 테스트 갱신 필요.
+- **중복 마이그레이션:** `supabase/migrations/`에 동일 타임스탬프(20260618030000) `add_discovery.sql`과 `add_discovery_columns.sql` 공존. 후자가 정본(컬럼 + `idx_nodes_xz` 인덱스). 전자의 고유분(거점 `is_discovered` UPDATE)은 `map_import_service.py`의 import-time `is_discovered=True`와 기능 중복. → `add_discovery.sql` 삭제 권장(단, 원격 DB 마이그레이션 히스토리 정합성 확인 후).
+- **대시보드 맵 시각화:** `presentation/dashboard/app.py` 중앙 맵은 아직 랜덤 Plotly 목업이며 일부 텔레메트리(경과시간 등) 하드코딩. 데이터 계층(`mock_data.py`)은 실제 Supabase 연동 완료(Spec D). 맵 실연동은 후속 과제.
+- **LLM 파이프라인 (런타임 통합 제외 — 2026-06-19 결정):** `infrastructure/llm/gemini_client.py` 모듈은 구현됐으나 런타임 연동(incidents 적재 + 대시보드 분석 UI)은 미연결. LLM_Pipeline_Design 명세 범위(모듈 작성)와는 일치한다. **런타임 통합은 구현 우선순위가 낮아 현재 범위에서 의도적으로 제외**되었으며, '후속 과제'가 아닌 보류(De-scoped) 상태로 둔다. 우선순위가 재조정되면 재개한다.
 
 > **Update Rule:** 이 파일은 프로젝트의 주요 마일스톤이 달성되거나 아키텍처 정책이 변경될 때마다 AI에 의해 갱신되어야 합니다.
