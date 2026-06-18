@@ -28,7 +28,7 @@ def dummy_scene_dump():
                 "id": "11111111-1111-1111-1111-111111111111",
                 "tag": "Node_Destination",
                 "position": {"x": 0.0, "y": 0.0, "z": 0.0},
-                "location_usage": "TestStation"
+                "usage": "TestStation"  # 실제 scene_dump 키는 'usage' (SceneDumpExporter.NodeData.usage). 모델 속성명 location_usage 와 혼동 금지.
             }
         ],
         "tiles": [
