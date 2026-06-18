@@ -57,25 +57,16 @@ def get_badge_class(status):
 
 # --- 데이터 로드 ---
 robots = list(get_robots())
-# Dummy Data 추가 (스크롤 테스트용)
-for i in range(10, 20):
-    robots.append({
-        "id": f"r{i}", "name": f"Wheeled-{i}", "platform": "wheeled",
-        "status": "Idle", "battery_pct": 100.0, "current_speed_mps": 0.0,
-        "current_mission_id": None,
-    })
 
 fleet_breakdown = get_fleet_breakdown()
 missions = list(get_missions())
-# Dummy Data 추가 (스크롤 테스트용)
-for i in range(10, 20):
-    missions.append({
-        "id": f"m{i}", "robot_name": f"Wheeled-{i}", "mission_type": "Delivery",
-        "status": "Completed", "started_at": "2026-06-17T10:30:00Z",
-        "completed_at": "2026-06-17T10:45:00Z", "accumulated_cost": 350.0,
-    })
 
 sim_status = get_simulator_status()
+
+# 로봇이 하나도 없을 때(DB 연결 실패 등) 화면이 죽지 않도록 방어
+if not robots:
+    st.warning("⚠️ 로봇 데이터를 불러오지 못했습니다. Supabase 연결 또는 robots 테이블을 확인하세요.")
+    st.stop()
 
 # --- 상태 관리 (세션) ---
 if 'selected_robot_id' not in st.session_state:
