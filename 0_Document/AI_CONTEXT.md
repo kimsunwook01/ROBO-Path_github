@@ -134,7 +134,13 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
     - [x] [STEP 3] Unity 피드백 송신 Sink (`Network/SubprocessTelemetrySink.cs`) — 도착/발견 시 `push_feedback.py` 서브프로세스 호출
     - [x] [STEP 4] 피드백 파이프라인 (Unity $\rightarrow$ Python Subprocess $\rightarrow$ Supabase) 기반 확립 (`push_feedback.py`) — FEEDBACK/DISCOVERY 분기, 엣지 매핑+폴백, 연속 임무 재배정
     - [x] RLS(Row Level Security) 쓰기 권한 우회를 위한 `service_role` 클라이언트 적용
-  - [ ] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축 (self-hosted runner 필요, 미착수)
+  - [~] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축 (저장소 측 산출물 작성 완료 2026-06-19, 실 Mac 러너 등록·검증 대기)
+    - [x] `.github/workflows/deploy-to-mac.yml` 작성 (runs-on [self-hosted, macOS, ARM64], 코드 pull → Secrets .env → conda 의존성+pytest 게이트 → launchd 설치 → kickstart -k 재시작 → 리포트)
+    - [x] `scripts/run_simulator.sh` (헤드리스 Unity 실행; launchd supervise 위해 `&` 대신 `exec` 포그라운드 실행)
+    - [x] `config/mac_services/com.robopath.simulator.plist` (사용자 LaunchAgent, KeepAlive, __HOME__ 치환 템플릿 — sudo 불필요)
+    - [x] Unity 헤드리스 진입점 `SimulatorLauncher.RunHeadless` (Debug/Editor, CampusMainMap 로드 → delayCall EnterPlaymode)
+    - [x] 러너 라벨 충돌 방지: 기존 `deploy-to-pi.yml` 의 runs-on 을 [self-hosted, Linux, ARM64] 로 분리
+    - [ ] (사용자/실 Mac) macOS self-hosted runner 등록, GitHub Secrets(SUPABASE_SERVICE_KEY 포함) 설정, Unity 6000.4.11f1+conda 설치, `SimulatorLauncher.cs.meta` 생성 커밋, 헤드리스 플레이모드 실동작 검증
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
   - [x] Data Contract 정의 (`ROBO-Path_Dashboard_Data_Contract.md`)
   - [x] Streamlit 관제 대시보드 1차 UI 목업 구현 (`app.py`, 3분할 독립 스크롤 레이아웃 및 토글 기능 완성)

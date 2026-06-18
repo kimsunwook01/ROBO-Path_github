@@ -1,0 +1,94 @@
+name: Deploy to Mac Mini Simulator
+
+# main 브랜치 푸시 또는 Actions 탭에서 수동 실행 시 트리거.
+# (참고: 문서/무관 파일 변경에도 시뮬레이터가 재시작되는 게 부담되면 아래 push 에
+#  paths 필터를 추가해 Unity/, src/, scripts/, config/ 등으로 좁힐 수 있다.)
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    # Mac Mini 에 설치된 Self-Hosted Runner 에서만 실행.
+    # 자동 부여되는 OS/arch 라벨로 Pi(Linux/ARM64) 러너와 분리한다.
+    runs-on: [self-hosted, macOS, ARM64]
+
+    steps:
+      # Step 1: 최신 코드 동기화 (기존 클론을 pull — 대용량 Unity 저장소 재클론 방지)
+      - name: Pull latest code
+        run: |
+          cd "$HOME/ROBO-Path_project"
+          git pull origin main
+
+      # Step 2: GitHub Secrets 로부터 .env 생성
+      #  - 'ENVEOF'(따옴표) heredoc 이라 셸은 $ 를 확장하지 않고, ${{ secrets }} 만
+      #    Actions 가 렌더 단계에서 주입한다.
+      #  - $HOME 의존 값(BUFFER_PATH)은 셸 확장이 필요하므로 별도 echo 로 덧붙인다.
+      #  - push_feedback 가 admin 클라이언트를 쓰므로 SUPABASE_SERVICE_KEY 가 반드시 필요.
+      - name: Write .env file from Secrets
+        run: |
+          cat > "$HOME/ROBO-Path_project/.env" << 'ENVEOF'
+          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_KEY=${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          SIMULATOR_HOST=0.0.0.0
+          SIMULATOR_WS_PORT=8765
+          EDGE_SERVER_URL=${{ secrets.EDGE_SERVER_URL }}
+          UPLOAD_LOG_ENDPOINT=/upload/log
+          UPLOAD_VOXEL_ENDPOINT=/upload/voxel
+          MAX_BUFFER_SIZE_MB=5000
+          ENVEOF
+          echo "BUFFER_PATH=$HOME/robo-path-buffer" >> "$HOME/ROBO-Path_project/.env"
+          mkdir -p "$HOME/robo-path-buffer/logs" "$HOME/robo-path-buffer/voxel"
+
+      # Step 3: conda 환경 의존성 갱신 + 파이썬 테스트 게이트
+      #  - GitHub Actions 의 셸은 비로그인 셸이라 conda 가 초기화돼 있지 않으므로 직접 source.
+      #  - miniconda(가이드 권장)/anaconda 둘 다 대비.
+      #  - 모든 테스트는 MagicMock/스킵 기반이라 DB 없이 통과한다(실 DB 해피패스는
+      #    ROBOPATH_RUN_DB_TESTS 옵트인이라 기본 스킵).
+      - name: Update deps & run Python tests
+        run: |
+          source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null \
+            || source "$HOME/anaconda3/etc/profile.d/conda.sh" 2>/dev/null \
+            || { echo "::error::conda 초기화 스크립트를 찾을 수 없음"; exit 1; }
+          conda activate robopath
+          cd "$HOME/ROBO-Path_project"
+          pip install -r requirements.txt
+          PYTHONPATH="$PWD" python -m pytest tests/ -q
+
+      # Step 4: launchd LaunchAgent 설치/갱신 (__HOME__ 치환)
+      - name: Install/refresh launchd agent
+        run: |
+          mkdir -p "$HOME/Library/LaunchAgents" "$HOME/ROBO-Path_project/logs"
+          sed "s|__HOME__|$HOME|g" \
+            "$HOME/ROBO-Path_project/config/mac_services/com.robopath.simulator.plist" \
+            > "$HOME/Library/LaunchAgents/com.robopath.simulator.plist"
+          chmod +x "$HOME/ROBO-Path_project/scripts/run_simulator.sh"
+
+      # Step 5: 헤드리스 시뮬레이터 재시작 (launchd)
+      #  - bootout(이미 로드 시 내림) → bootstrap → kickstart -k(강제 재시작)
+      - name: Restart headless simulator
+        run: |
+          UID_NUM="$(id -u)"
+          launchctl bootout "gui/$UID_NUM/com.robopath.simulator" 2>/dev/null || true
+          launchctl bootstrap "gui/$UID_NUM" "$HOME/Library/LaunchAgents/com.robopath.simulator.plist"
+          launchctl kickstart -k "gui/$UID_NUM/com.robopath.simulator"
+
+      # Step 6: 배포 결과 리포트
+      - name: Report deployment status
+        run: |
+          UID_NUM="$(id -u)"
+          sleep 3
+          echo "=== 배포 결과 리포트 ==="
+          if launchctl print "gui/$UID_NUM/com.robopath.simulator" >/dev/null 2>&1; then
+            echo "✅ simulator LaunchAgent 로드됨"
+            launchctl print "gui/$UID_NUM/com.robopath.simulator" | grep -E "state =|pid =" || true
+          else
+            echo "⚠️ simulator LaunchAgent 미로드 (gui 도메인/로그인 세션 확인 필요)"
+          fi
+          echo "--- simulator.log (최근 20줄) ---"
+          tail -n 20 "$HOME/ROBO-Path_project/Unity/ROBO-Path-Simulator/Logs/simulator.log" 2>/dev/null \
+            || echo "(simulator.log 아직 생성되지 않음)"

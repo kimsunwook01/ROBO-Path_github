@@ -9,8 +9,9 @@ on:
 
 jobs:
   deploy:
-    # 라즈베리파이에 설치된 Self-Hosted Runner에서 실행
-    runs-on: self-hosted
+    # 라즈베리파이에 설치된 Self-Hosted Runner에서 실행.
+    # Mac(macOS/ARM64) 러너 추가로 인한 오매칭을 막기 위해 OS/arch 라벨로 Pi 만 지정한다.
+    runs-on: [self-hosted, Linux, ARM64]
 
     steps:
       # Step 1: 최신 코드 동기화
