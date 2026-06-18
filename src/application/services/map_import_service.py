@@ -6,6 +6,7 @@ from uuid import UUID
 from src.domain.models import Node, BaseLocation, Edge
 from src.application.interfaces import NodeRepository, EdgeRepository
 from src.domain.algorithms.cost_calculator import is_traversable
+from src.application.services.block_occlusion import compute_covered_tile_ids
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,13 @@ class MapImportService:
         nodes_data = data.get("nodes", [])
         tiles_data = data.get("tiles", [])
         adjacency_data = data.get("adjacency", [])
+
+        # 명세(Map_Design 2장): 로봇은 '블록의 윗면'만 주행한다. 수직으로 쌓인 블록에서
+        # 아래 블록은 위 블록에 덮여 주행면이 될 수 없으므로 A* 그래프 노드에서 제외한다.
+        # (단, 지붕/처마처럼 공중에 떠서 덮는 경우는 아래 블록을 제외하지 않는다 —
+        #  block_occlusion 이 '맞붙음' 기준으로 판정한다.)
+        covered_tile_ids = compute_covered_tile_ids(tiles_data)
+        logger.info(f"덮인 블록(주행면 제외): {len(covered_tile_ids)}개 / 전체 타일 {len(tiles_data)}개")
 
         # 1. 노드 생성
         node_models: List[Node] = []
@@ -63,8 +71,15 @@ class MapImportService:
             node_dict[node_id] = base_loc
 
         # 1-2. 타일 파싱 -> 기본 Node
+        skipped_covered = 0
         for t in tiles_data:
             tile_id = str(t["id"])
+
+            # 덮인 블록은 주행면이 아니므로 노드로 만들지 않는다 (명세: 윗면만 주행)
+            if tile_id in covered_tile_ids:
+                skipped_covered += 1
+                continue
+
             try:
                 uid = UUID(tile_id)
             except ValueError:
@@ -83,6 +98,9 @@ class MapImportService:
             )
             node_models.append(node)
             node_dict[tile_id] = node
+
+        if skipped_covered:
+            logger.info(f"덮인 블록 {skipped_covered}개를 노드 생성에서 제외함")
 
         # 2. 엣지 생성
         edge_models: List[Edge] = []

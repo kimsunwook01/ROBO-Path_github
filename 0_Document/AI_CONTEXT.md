@@ -134,11 +134,23 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
   - [x] Data Contract 정의 (`ROBO-Path_Dashboard_Data_Contract.md`)
   - [x] Streamlit 관제 대시보드 1차 UI 목업 구현 (`app.py`, 3분할 독립 스크롤 레이아웃 및 토글 기능 완성)
-  - [ ] [Spec A] 임무 시스템 (Pickup $\rightarrow$ Delivery) 및 목적지 자동 배정 로직 구현
-  - [ ] [Spec B] 로봇 상태/배터리 모델링 및 `robots` DB 동기화
-  - [ ] [Spec C] Discovery 텔레메트리 파이프라인(Raycast 탐색 결과 $\rightarrow$ `nodes.is_discovered`) 연동
-  - [ ] [Spec D] 대시보드 Mock 데이터를 실제 Supabase 쿼리로 교체 (DB 연동)
-  - [ ] [Spec E] Streamlit $\rightarrow$ Unity 통신용 Python WebSocket 클라이언트(`ros2_bridge/bridge.py`) 및 실시간 명령 송신
+  - [x] [Spec A] 임무 시스템 (Pickup $\rightarrow$ Delivery) 및 목적지 자동 배정 로직 구현 — 웨이포인트 내비게이션 + 연속 주행 루프 (커밋 `e48273c`)
+  - [x] [Spec B] 로봇 상태/배터리 모델링 및 `robots` DB 동기화 — 지형별 배터리 소모, 상태 변경 시점 갱신 (커밋 `6300915`)
+  - [x] [Spec C] Discovery 텔레메트리 파이프라인(Raycast 탐색 결과 $\rightarrow$ `nodes.is_discovered`) 연동 — HashSet 중복 제거, 일반 타일 발견 (커밋 `d2705bc`)
+  - [x] [Spec D] 대시보드 Mock 데이터를 실제 Supabase 쿼리로 교체 (DB 연동) — get_robots/get_fleet_breakdown/get_missions(robots 조인)/get_simulator_status (커밋 `9be3b08`)
+  - [x] [Spec E] Streamlit $\rightarrow$ Unity 통신용 Python WebSocket 클라이언트(`ros2_bridge/bridge.py`) 및 실시간 명령 송신 — 임무 배정 명령 송신 동작 확인
+  - [x] **[NavMesh 정합성] 휠 로봇 계단/도로 침범 문제 근본 해결 (A* 의도와 NavMesh 실주행 일치화)**
+    - 배경: A* 경로 탐색과 Unity NavMeshAgent 의 실주행이 별개 시스템으로 동작 → A* 가 회피하도록 계산한 경로(계단/도로)를 NavMesh 가 무시하고 최단 경로로 가로지르는 문제 발견
+    - [x] **A* 레벨 1 — cost_profiles 주입:** `cost_profile_loader.py`(신규)로 로봇 로딩 시 `config/cost_profiles.json`을 `robot.weight_profile["cost_profiles"]`에 주입. robots 테이블의 weight_profile 기본값이 '{}'라 계단 차단(traversable:false)이 무력화되던 문제 해결. `mission_assignment_service.py`에서 호출(push_feedback 자동 배정도 커버)
+    - [x] **A* 레벨 2 — 덮인 블록(함정 평지) 제외:** `block_occlusion.py`(신규)로 같은 그리드 칸에서 위 블록과 맞붙어(gap≈0) 덮인 하부 블록을 A* 노드에서 제외. 명세 2장 '블록 윗면만 주행' 규칙 구현. 단 지붕/처마처럼 공중에 떠서(gap>0) 덮는 경우는 하부 주행면 보존. `map_import_service.py`에 연결. (계단 19개에 덮여있던 '함정 평지' 21개 제거, 그래프 연결성 100% 단일 컴포넌트 유지, 엣지 16.3만→9036개로 감소하여 A* 성능도 개선)
+    - [x] **NavMesh 레벨 — Area 분리 (근본 해결):** NavMeshAgent 가 자체 경로 계산 시에도 A* 의도를 따르도록 NavMesh Area 의 비용/통행 구조를 A* 와 일치시킴. `StairNavMeshSetup.cs`(신규 Editor 도구)로 지형 프리팹에 NavMeshModifier 자동 부착:
+      - **Stair Area:** 휠 로봇 `agent.areaMask`에서 완전 제외(통행 불가). 보행 로봇은 사용.
+      - **Road Area (연석):** 휠 로봇 `agent.areaMask`에서 완전 제외(평지→도로 직접 진입 불가). 횡단보도 타일은 도로 위 +0.5m에 얹힌 블록이라 NavMesh 가 그 윗면을 별도 주행면(Road Area 아님)으로 굽기 때문에 휠 로봇도 횡단보도로는 건넘. 보행 로봇은 단차 극복 가능하므로 Road 비용 3만 부여.
+      - **Ramp Area:** 경사를 평지와 구분해 NavMesh 가 인식하도록 분리(비용 1, 통행 영향 없음). 향후 대응용 사전 분리.
+      - **Hazard Area:** `HazardTileController` 가 NavMeshObstacle carving 으로 활성 시 NavMesh 를 동적으로 도려내 통행 차단, 비활성 시 복원(에디터 재베이크 불필요).
+    - [x] `RobotController.cs` 수정: `ApplyPlatformAreaMask()` 추가(Awake 호출), 도달 반경 8m→3.5m/5m 축소(칸 건너뛰고 대각선 질러가기 완화)
+    - [x] **검증 완료(실제 플레이 테스트):** 휠 로봇이 계단/도로를 한 번도 침범하지 않고 횡단보도로만 도로를 건넘. 장애물 타일 활성/비활성에 따라 NavMesh 가 동적으로 길을 막거나 엶. 경사/장애물/도로가 각각 다른 색으로 베이크됨.
+    - 비고: 횡단보도 없이 도로로만 둘러싸인 목적지(현재 맵엔 없음) 및 장애물로 모든 경로 차단 시 → 향후 임무 실패/재배정 로직으로 대응(맵이 올바르게 동작한 증거). 보행 로봇은 도로 통행 가능하므로 그런 목적지 전담 가능.
 - [x] **9. 에지 서버(라즈베리파이) 인프라 구현 (`src/infrastructure/storage/`)**
   - [x] GitHub Actions CI/CD 구축, SSD 마운트, FastAPI 구현, Systemd/Nginx 세팅 완료
 

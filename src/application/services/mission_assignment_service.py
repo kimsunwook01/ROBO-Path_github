@@ -10,6 +10,7 @@ from src.application.interfaces.node_repository import NodeRepository
 from src.application.interfaces.mission_repository import MissionRepository
 from src.application.interfaces.robot_repository import RobotRepository
 from src.application.services.path_planning_service import PathPlanningService
+from src.application.services.cost_profile_loader import inject_cost_profiles
 from src.presentation.ros2_bridge.bridge import UnityWebSocketBridge
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,10 @@ class MissionAssignmentService:
         if not robot:
             logger.error(f"Robot {robot_name} not found.")
             return None
+
+        # 계단 등 통행 불가 지형을 A* 가 차단하도록 cost_profiles 주입 (핵심: 이게 없으면
+        # is_traversable 이 항상 True 라서 휠 로봇이 계단을 오른다)
+        inject_cost_profiles(robot)
 
         if robot.status != "Idle":
             logger.info(f"Robot {robot_name} is not Idle (current: {robot.status}). Skipping.")

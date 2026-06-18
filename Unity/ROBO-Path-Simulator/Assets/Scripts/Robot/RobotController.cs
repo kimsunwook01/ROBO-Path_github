@@ -12,6 +12,15 @@ namespace ROBOPath.Robot
         private RobotIdentify identify;
         private ITelemetrySink telemetrySink;
 
+        // NavMesh Area 이름 (StairNavMeshSetup 에서 프리팹에 부여한 것과 일치해야 함)
+        private const string STAIR_AREA_NAME = "Stair";
+        private const string ROAD_AREA_NAME = "Road";
+        // 보행 로봇의 Road Area 통행 비용 (A* cost_multiplier 와 일치: 보행 3).
+        // 휠 로봇은 비용이 아니라 areaMask 에서 Road 를 완전 제외한다(연석: 도로 진입 불가).
+        private const float ROAD_COST_LEGGED = 3f;
+        // 참고: 장애물(Hazard) 통행 차단은 비용이 아니라 HazardTileController 의 NavMeshObstacle
+        // carving 으로 처리한다(활성 시 NavMesh 를 도려내 모든 로봇 통행 차단). 여기서는 처리 안 함.
+
         public bool isManualMode = false;
         public bool manualInterventionOccurred = false;
         public bool isActiveControlled = false;
@@ -21,8 +30,11 @@ namespace ROBOPath.Robot
 
         [Header("Waypoint Navigation")]
         [Tooltip("Inspector 값에 관계없이 Awake에서 코드 기본값으로 재설정됨")]
-        public float waypointArrivalRadius = 8.0f;
-        public float finalArrivalRadius = 8.0f;
+        // 도달 반경이 너무 크면(그리드 10m 대비 8m) 로봇이 칸을 건너뛰고 대각선으로
+        // 질러가 도로/계단을 가로지른다. 칸 절반 이하로 줄여 경로를 촘촘히 따르게 한다.
+        // 단 너무 작으면 STUCK 이 재발하므로 절충값 사용(막히면 아래 skip 로직이 처리).
+        public float waypointArrivalRadius = 3.5f;
+        public float finalArrivalRadius = 5.0f;
 
         [Header("Battery (Spec B)")]
         public float batteryPct = 100f;
@@ -51,10 +63,73 @@ namespace ROBOPath.Robot
 
             // public 필드는 Inspector/프리팹에 직렬화된 값이 코드 기본값을 덮어쓰므로,
             // 여기서 코드 값으로 강제 재설정한다 (Inspector를 직접 안 만져도 적용됨).
-            waypointArrivalRadius = 8.0f;
-            finalArrivalRadius = 8.0f;
+            waypointArrivalRadius = 3.5f;
+            finalArrivalRadius = 5.0f;
 
             lastBatteryCheckPos = transform.position;
+
+            // 휠 로봇은 계단(Stair Area)을 NavMesh 경로에서 제외한다.
+            // 계단은 경사면 형상이라 NavMesh 가 덮어 물리적으로 올라탈 수 있는데,
+            // areaMask 에서 Stair 비트를 끄면 NavMeshAgent 가 계단을 통과하는 경로를
+            // 아예 만들지 않는다. 보행 로봇은 모든 Area 를 그대로 두어 계단을 사용한다.
+            ApplyPlatformAreaMask();
+        }
+
+        /// <summary>
+        /// 플랫폼별 NavMesh Area 통행 제어.
+        /// - Stair Area: 휠 로봇은 areaMask 에서 완전 제외(통행 불가). 보행은 사용.
+        /// - Road Area: 휠 로봇도 areaMask 에서 완전 제외(연석 — 평지에서 도로로 직접
+        ///   진입 불가). 횡단보도 타일은 도로 위 0.5m 에 얹힌 블록이라 NavMesh 가 그
+        ///   윗면을 별도 주행면(Road Area 아님)으로 굽기 때문에, 휠 로봇도 횡단보도로는
+        ///   건널 수 있다. 보행 로봇은 단차 극복이 가능하므로 Road 를 비용(3)만 부여해
+        ///   상황에 따라 감수하게 둔다.
+        /// - Hazard Area: 기본은 통행 가능(비활성). 활성화되면 HazardTileController 가
+        ///   SetAreaCost 로 비용을 높여 회피시킨다(이 메서드에선 기본 비용만 보장).
+        /// </summary>
+        private void ApplyPlatformAreaMask()
+        {
+            if (agent == null || identify == null) return;
+
+            bool isWheeled = (identify.platform == RobotPlatform.Wheeled);
+
+            // 1) 계단: 휠 로봇은 areaMask 에서 제외(완전 차단)
+            if (isWheeled)
+            {
+                int stairAreaIndex = NavMesh.GetAreaFromName(STAIR_AREA_NAME);
+                if (stairAreaIndex >= 0)
+                {
+                    agent.areaMask &= ~(1 << stairAreaIndex);
+                    Debug.Log($"[RobotController] {identify.robotId}: 휠 로봇 — Stair Area(idx={stairAreaIndex}) 제외. areaMask={agent.areaMask}");
+                }
+                else
+                {
+                    Debug.LogWarning($"[RobotController] {identify.robotId}: 'Stair' Area 를 찾을 수 없음. " +
+                        "Navigation Areas 에 Stair 가 등록됐는지, 재베이크했는지 확인하세요.");
+                }
+            }
+
+            // 2) 도로(연석): 휠 로봇은 areaMask 제외(진입 불가), 보행 로봇은 비용만 부여
+            int roadAreaIndex = NavMesh.GetAreaFromName(ROAD_AREA_NAME);
+            if (roadAreaIndex >= 0)
+            {
+                if (isWheeled)
+                {
+                    // 도로 면을 아예 못 밟게 한다. 횡단보도 면은 Road Area 가 아니라 통행 가능.
+                    agent.areaMask &= ~(1 << roadAreaIndex);
+                    Debug.Log($"[RobotController] {identify.robotId}: 휠 로봇 — Road Area(idx={roadAreaIndex}) 제외(연석). areaMask={agent.areaMask}");
+                }
+                else
+                {
+                    // 보행 로봇은 단차 극복 가능 → 비용만 부여해 상황에 따라 감수
+                    agent.SetAreaCost(roadAreaIndex, ROAD_COST_LEGGED);
+                    Debug.Log($"[RobotController] {identify.robotId}: 보행 로봇 — Road Area(idx={roadAreaIndex}) 비용={ROAD_COST_LEGGED} 설정");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[RobotController] {identify.robotId}: 'Road' Area 를 찾을 수 없음. " +
+                    "Navigation Areas 에 Road 가 등록됐는지, 재베이크했는지 확인하세요.");
+            }
         }
 
         void Update()

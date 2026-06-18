@@ -136,6 +136,8 @@ public class HazardTileController : MonoBehaviour
 - **NavMesh 재베이크 불필요:** MeshRenderer만 끄므로 물리/NavMesh는 변경되지 않는다. A* 비용은 소프트웨어 레벨에서 제어한다.
 - **Collider 비활성화 금지:** Collider를 끄면 RaycastScanner에서 장애물을 전혀 감지할 수 없게 되어 탐색 로직 오작동 가능성이 있다.
 
+> **⚠️ [2026-06 갱신] 3.6절 NavMesh 통행 처리 변경:** 위 제약 사항 중 "NavMesh 통행 항상 허용"과 "A* 비용은 Phase 4 연동" 부분은 갱신되었다. 현재 `HazardTileController`는 `NavMeshObstacle` 컴포넌트의 carving을 활성/비활성에 따라 토글하여, **활성 시 해당 칸의 NavMesh를 동적으로 도려내 모든 로봇의 통행을 차단**하고 비활성 시 복원한다. 단, **Collider는 여전히 건드리지 않는다**(RaycastScanner 감지 유지 — 위 제약 유효). NavMeshObstacle의 carving은 런타임 동적 처리라 여전히 정적 재베이크는 불필요하다. 자세한 내용은 5장 갱신 박스 참조. (프리팹에 NavMeshObstacle + Carve 옵션을 부착해야 동작하며, 미부착 시 MeshRenderer 토글만 수행하는 하위 호환 동작을 한다.)
+
 ---
 
 ## 4. 노면 통행 규칙 (정적 비용 제약)
@@ -148,6 +150,29 @@ public class HazardTileController : MonoBehaviour
 ---
 
 ## 5. NavMesh 및 블록 단차 설계 원리
+
+> ### ⚠️ [2026-06 갱신] 5장 설계 변경 — NavMesh Area 분리 도입
+>
+> **당초 설계(5.1 원안):** NavMesh를 공용 1회만 빌드하고, 계단/도로 회피는 A* 비용 단계에서만 처리한다. 휠 로봇이 물리적으로 계단/도로에 잘못 진입하는 것은 Recall(회수)로 대응하므로 NavMesh 레벨 차단은 불필요하다.
+>
+> **실제 검증 결과(문제):** A* 경로 탐색과 Unity NavMeshAgent의 실주행은 **별개의 두 시스템**으로 동작한다. A*는 "어디로" 갈지(웨이포인트)만 정하고, 웨이포인트 사이를 "어떻게" 갈지는 NavMeshAgent가 자체 계산한다. NavMesh는 A*의 비용/통행 의도를 전혀 모르므로, A*가 계단/도로를 회피하도록 경로를 줘도 NavMeshAgent가 최단 경로로 계단/도로를 가로질러 버린다. (실측: 휠 로봇이 계단으로 돌진하다 막히고서야 우회, 도로는 당당히 횡단). Recall은 비상 장치이지 일상적 회피 수단이 아니므로, "정상 상태에서 계단/도로를 회피한다"는 명세 전제 자체가 깨진 상태였다.
+>
+> **변경된 설계(현행):** NavMeshAgent가 자체 경로를 계산할 때도 A* 의도를 따르도록, **NavMesh Area를 지형별로 분리**하고 비용/통행 구조를 A*와 일치시킨다. 지형 프리팹에 `NavMeshModifier`를 부착(에디터 도구 `StairNavMeshSetup.cs`로 자동화)하여 베이크 시 Area를 나누고, `RobotController.ApplyPlatformAreaMask()`에서 플랫폼별로 `areaMask`/`SetAreaCost`를 제어한다.
+>
+> | 지형 | NavMesh Area | 휠 로봇 | 보행 로봇 | 방식 |
+> |---|---|---|---|---|
+> | 계단 | `Stair` | 통행 불가 | 통행 가능 | `areaMask`에서 Stair 제외(휠) |
+> | 도로(연석) | `Road` | **진입 불가** | 비용 3 감수 | `areaMask`에서 Road 제외(휠) / `SetAreaCost`(보행) |
+> | 경사 | `Ramp` | 통행 | 통행 | 비용 1(인식만, 영향 없음) |
+> | 장애물 | `Hazard` | 활성 시 차단 | 활성 시 차단 | `NavMeshObstacle` carving 동적 제어 |
+>
+> **연석(curb) 구현 핵심:** 휠 로봇은 도로 `Area`를 `areaMask`에서 완전 제외하여 평지→도로 직접 진입이 불가능하다(현실의 연석 장애물 반영). 단 **횡단보도 타일은 도로 블록 위 +0.5m에 얹힌 별도 물리 블록**이라, NavMesh가 그 윗면을 Road Area가 아닌 별도 주행면으로 굽는다. 따라서 휠 로봇도 횡단보도로는 도로를 건널 수 있다(별도 NavMeshLink 불필요). 보행 로봇은 단차 극복이 가능하므로 도로를 비용(3)으로만 억제해 상황에 따라 감수한다.
+>
+> **A* 레벨 병행 수정:** NavMesh 분리와 함께, A* 그래프에서도 ① 로봇에 `cost_profiles` 주입(`cost_profile_loader.py` — robots.weight_profile 기본값 '{}'로 계단 차단이 무력화되던 문제 해결), ② 같은 칸에서 위 블록과 맞붙어 덮인 하부 블록(='함정 평지')을 노드에서 제외(`block_occlusion.py` — 본 문서 2장 '블록 윗면만 주행' 규칙 구현, 단 지붕/처마처럼 공중에 떠서 덮는 경우는 보존)를 적용했다.
+>
+> **장애물 타일 동적 제어:** `HazardTileController`가 `NavMeshObstacle`의 carving을 활성/비활성에 따라 토글하여, 런타임에 NavMesh를 동적으로 도려내거나(통행 차단) 복원한다(통행 허용). 에디터 재베이크가 불필요하며, 향후 WebSocket 명령만으로 통행 제어가 가능하다. (3.6절의 "NavMesh 통행 항상 허용" 기술은 이 변경으로 갱신됨 — 3.6절 갱신 주석 참조)
+>
+> 아래 5.1~5.4의 원안 서술은 설계 맥락 보존을 위해 남겨둔다. 5.1의 "공용 1회 빌드/Recall 대응" 부분은 위 변경된 설계로 대체되었다.
 
 ### 5.1 공용 NavMesh 기반 플랫폼별 통행 제어
 - NavMesh는 플랫폼 구분 없이 **맵 전체 공용으로 1회만 빌드**하며, 계단(`Path_Stair`)도 경사 형상이므로 NavMesh상으로는 연결된다.

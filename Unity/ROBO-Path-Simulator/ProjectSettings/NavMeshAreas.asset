@@ -11,13 +11,13 @@ NavMeshProjectSettings:
     cost: 1
   - name: Jump
     cost: 2
-  - name: 
+  - name: Stair
     cost: 1
-  - name: 
+  - name: Road
     cost: 1
-  - name: 
+  - name: Ramp
     cost: 1
-  - name: 
+  - name: Hazard
     cost: 1
   - name: 
     cost: 1
