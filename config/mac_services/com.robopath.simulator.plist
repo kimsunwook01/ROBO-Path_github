@@ -44,6 +44,8 @@
     <dict>
         <key>ROBOPATH_ROOT</key>
         <string>__HOME__/ROBO-Path_project</string>
+        <key>ROBOPATH_PYTHON</key>
+        <string>__HOME__/miniconda3/envs/robopath/bin/python</string>
     </dict>
 </dict>
 </plist>
