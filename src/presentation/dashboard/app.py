@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
 
-from mock_data import get_robots, get_fleet_breakdown, get_missions, get_simulator_status
+from mock_data import get_robots, get_fleet_breakdown, get_missions, get_simulator_status, get_map_graph
 
 # --- 설정 및 전역 스타일 ---
 st.set_page_config(page_title="ROBO-Path Dashboard", page_icon="🤖", layout="wide")
@@ -54,6 +54,12 @@ st.markdown("""
 
 def get_badge_class(status):
     return f"badge-{status.lower()}"
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def load_map_graph():
+    """맵 노드/엣지를 60초 캐시로 로드한다 (수천 개 데이터를 매 rerun마다 재조회하지 않도록)."""
+    return get_map_graph()
 
 # --- 데이터 로드 ---
 robots = list(get_robots())
@@ -112,7 +118,7 @@ if col_left:
             plat_filter = st.multiselect("Platform", ["wheeled", "legged"], default=["wheeled", "legged"])
         with f_col2:
             stat_filter = st.multiselect("Status", ["Idle", "Charging", "Delivery", "Exploring", "Returning"], 
-                                         default=["Idle", "Charging", "Delivery", "Exploring", "Returning"])
+                                         default=["Charging", "Delivery", "Exploring", "Returning"])
         
         filtered_robots = [r for r in robots if r['platform'] in plat_filter and r['status'] in stat_filter]
         
@@ -185,38 +191,164 @@ with col_center:
     with t_col4:
         st.metric("Mission Cost", f"{cost:.1f}")
 
-    # Map Control Buttons
+    # --- 맵 컨트롤 바 ---
     st.markdown("<div class='telemetry-row'>", unsafe_allow_html=True)
     b_col1, b_col2, b_col3, b_col4 = st.columns(4)
     disabled = not sim_status["is_online"]
-    with b_col1: st.button("Clear Path", disabled=disabled, use_container_width=True)
-    with b_col2: st.button("Zoom Fit", disabled=disabled, use_container_width=True)
-    with b_col3: st.selectbox("Map Visibility", ["All", "Path Only", "Obstacles"], disabled=disabled, label_visibility="collapsed")
-    with b_col4: st.button("Refresh Voxels", disabled=disabled, use_container_width=True)
+    with b_col1:
+        st.button("Clear Path", disabled=disabled, use_container_width=True)
+    with b_col2:
+        if st.button("🔄 Refresh Map", use_container_width=True):
+            load_map_graph.clear()
+            st.rerun()
+    with b_col3:
+        view_mode = st.selectbox(
+            "Map View", ["전체", "발견 영역만", "거점만"], label_visibility="collapsed"
+        )
+    with b_col4:
+        show_edges = st.toggle("경로망", value=False)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Mock 3D / 2D Map Placeholder (Plotly)
-    st.markdown("##### 📍 Grid Map (Mock Visualization)")
-    
-    # 2D Heatmap (Grid) 생성 - 탐색 구역(Fog of war)과 경로(path) 표현용 가짜 데이터
-    import numpy as np
-    grid_size = 20
-    z_data = np.random.choice([0, 1, 2], size=(grid_size, grid_size), p=[0.7, 0.2, 0.1])
-    
-    # 로봇 위치(가짜)
-    rx, ry = 10, 10
-    z_data[rx, ry] = 3 # Robot Position
-    
-    fig = px.imshow(z_data, color_continuous_scale=["#0B0F19", "#1A2235", "#8B5CF6", "#38BDF8"], origin='lower')
-    fig.update_layout(
-        plot_bgcolor="#0B0F19",
-        paper_bgcolor="#0B0F19",
-        margin=dict(l=0, r=0, t=0, b=0),
-        coloraxis_showscale=False,
-        xaxis=dict(showgrid=False, zeroline=False, visible=False),
-        yaxis=dict(showgrid=False, zeroline=False, visible=False)
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    # --- 캠퍼스 맵 (실데이터: nodes + map_edges) ---
+    st.markdown("##### 📍 캠퍼스 맵 (Supabase 실데이터)")
+
+    graph = load_map_graph()
+    g_nodes = graph.get("nodes", [])
+    g_edges = graph.get("edges", [])
+    g_stations = graph.get("stations", [])
+
+    if not g_nodes:
+        st.info("맵 데이터를 불러오지 못했습니다. (nodes 테이블이 비어있거나 DB 연결 실패)")
+    else:
+        # 지형 태그 → 색상 (config/cost_profiles.json 기준)
+        TERRAIN_COLORS = {
+            "Terrain_Flat": "#475569",       # 평지 (슬레이트)
+            "Terrain_Slope": "#14B8A6",      # 경사 (틸)
+            "Path_Ramp": "#22C55E",          # 램프 (그린)
+            "Path_Stair": "#F97316",         # 계단 (오렌지)
+            "Path_Tunnel": "#8B5CF6",        # 터널 (퍼플)
+            "Road_Vehicle": "#DC2626",       # 차도 (레드)
+            "Road_Vehicle_Ramp": "#B91C1C",  # 차도 램프 (다크레드)
+            "Crosswalk": "#E5E7EB",          # 횡단보도 (화이트)
+            "Tile_Hazard": "#FACC15",        # 위험 타일 (옐로)
+        }
+        DEFAULT_COLOR = "#64748B"
+
+        # 거점 node_id 집합 (base_locations 멤버십)
+        station_meta = {s.get("node_id"): s for s in g_stations}
+
+        # 분류: 거점 / 타일(탐색됨 · 미탐색), 타일은 지형색
+        st_x, st_y, st_t = [], [], []
+        dx_, dy_, dc_, dt_ = [], [], [], []   # 탐색된 타일
+        ux_, uy_, uc_ = [], [], []            # 미탐색 타일
+        terrain_present = set()
+
+        for n in g_nodes:
+            nid = n.get("id")
+            x, z = n.get("x"), n.get("z")
+            tag = n.get("terrain_tag") or "-"
+            if nid in station_meta:
+                meta = station_meta[nid]
+                usage = meta.get("location_usage") or "station"
+                st_x.append(x); st_y.append(z)
+                st_t.append(f"🏁 거점 · {usage}<br>{meta.get('name', '')}")
+                continue
+            color = TERRAIN_COLORS.get(tag, DEFAULT_COLOR)
+            terrain_present.add(tag)
+            if n.get("is_discovered"):
+                dx_.append(x); dy_.append(z); dc_.append(color); dt_.append(f"탐색됨 · {tag}")
+            else:
+                ux_.append(x); uy_.append(z); uc_.append(color)
+
+        fig = go.Figure()
+
+        # 엣지(선택, 기본 off) — 수십만 개까지 가능해 상한 샘플링
+        edge_note = ""
+        if show_edges and view_mode != "거점만" and g_edges:
+            pos = {n["id"]: (n["x"], n["z"]) for n in g_nodes}
+            MAX_EDGES = 20000
+            step = max(1, len(g_edges) // MAX_EDGES)
+            ex, ey = [], []
+            for e in g_edges[::step]:
+                a = pos.get(e.get("from_node_id"))
+                b = pos.get(e.get("to_node_id"))
+                if a and b:
+                    ex += [a[0], b[0], None]
+                    ey += [a[1], b[1], None]
+            if ex:
+                fig.add_trace(go.Scattergl(
+                    x=ex, y=ey, mode="lines",
+                    line=dict(color="#1E293B", width=0.5),
+                    hoverinfo="skip", showlegend=False,
+                ))
+            if step > 1:
+                edge_note = f" · 엣지 1/{step} 샘플 표시"
+
+        # 미탐색 타일 (흐릿, Fog) — '전체'에서만
+        if view_mode == "전체" and ux_:
+            fig.add_trace(go.Scattergl(
+                x=ux_, y=uy_, mode="markers",
+                marker=dict(size=4, color=uc_, opacity=0.35),
+                hoverinfo="skip", showlegend=False,
+            ))
+        # 탐색된 타일 (선명)
+        if view_mode in ("전체", "발견 영역만") and dx_:
+            fig.add_trace(go.Scattergl(
+                x=dx_, y=dy_, mode="markers",
+                marker=dict(size=5, color=dc_, opacity=1.0),
+                text=dt_, hovertemplate="%{text}<extra></extra>",
+                showlegend=False,
+            ))
+        # 거점(Station)
+        if st_x:
+            fig.add_trace(go.Scatter(
+                x=st_x, y=st_y, mode="markers",
+                marker=dict(size=12, color="#F59E0B", symbol="diamond",
+                            line=dict(color="#FDE68A", width=1)),
+                text=st_t, hovertemplate="%{text}<extra></extra>",
+                showlegend=False,
+            ))
+
+        fig.update_layout(
+            plot_bgcolor="#0B0F19", paper_bgcolor="#0B0F19",
+            margin=dict(l=0, r=0, t=0, b=0), height=560,
+            showlegend=False,
+            xaxis=dict(showgrid=False, zeroline=False, visible=False,
+                       scaleanchor="y", scaleratio=1),
+            yaxis=dict(showgrid=False, zeroline=False, visible=False),
+            dragmode="pan",
+        )
+        st.plotly_chart(fig, use_container_width=True,
+                        config={"scrollZoom": True, "displaylogo": False})
+
+        # 지형 색상 범례 (실제 존재하는 태그만)
+        chips = []
+        for tag, col in TERRAIN_COLORS.items():
+            if tag in terrain_present:
+                chips.append(
+                    f"<span style='color:{col};font-size:1.2em;'>■</span> "
+                    f"<span style='color:#CBD5E1;font-size:0.8em;'>{tag}</span>"
+                )
+        chips.append(
+            "<span style='color:#F59E0B;font-size:1.1em;'>◆</span> "
+            "<span style='color:#CBD5E1;font-size:0.8em;'>거점</span>"
+        )
+        st.markdown(
+            "&nbsp;&nbsp;".join(chips)
+            + "<div style='color:#64748B;font-size:0.75em;margin-top:4px;'>"
+              "흐릿=미탐색 · 선명=탐색됨 (Fog of War)</div>",
+            unsafe_allow_html=True,
+        )
+
+        # 요약 캡션
+        total = len(g_nodes)
+        disc = len(dx_)
+        tiles_total = len(dx_) + len(ux_)
+        pct = (disc / tiles_total * 100) if tiles_total else 0
+        st.caption(
+            f"노드 {total:,}개 · 거점 {len(st_x)}개 · 타일 {tiles_total:,}개 "
+            f"(탐색 {disc:,}개, {pct:.1f}%) · 엣지 {len(g_edges):,}개{edge_note}"
+        )
 
 # ==========================================
 # 3. 우측 사이드바: 분석 및 로그 (Analytics & Logs)

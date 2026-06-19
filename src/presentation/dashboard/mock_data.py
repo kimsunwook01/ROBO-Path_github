@@ -122,3 +122,48 @@ def get_simulator_status():
     except Exception as e:
         logger.error(f"get_simulator_status failed: {e}")
         return {"is_online": False, "last_heartbeat": None}
+
+
+def get_map_graph():
+    """
+    맵 시각화용 노드/엣지를 조회한다 (탑뷰 좌표 = x, z).
+
+    PostgREST 기본 1000행 응답 제한을 range 페이지네이션으로 우회해 전량 조회한다.
+    대시보드 렌더에 필요한 최소 컴럼만 선택해 전송량을 줄인다.
+    반환:
+      {
+        "nodes": [{id, x, z, node_type, terrain_tag, is_discovered}, ...],
+        "edges": [{from_node_id, to_node_id}, ...]
+      }
+    조회 실패 시 {"nodes": [], "edges": []} 반환(대시보드가 죽지 않도록).
+    """
+    try:
+        from src.infrastructure.database.client import get_supabase_client
+        client = get_supabase_client()
+
+        def _fetch_all(table: str, columns: str):
+            rows = []
+            page_size = 1000
+            offset = 0
+            while True:
+                resp = (
+                    client.table(table)
+                    .select(columns)
+                    .range(offset, offset + page_size - 1)
+                    .execute()
+                )
+                batch = resp.data or []
+                rows.extend(batch)
+                if len(batch) < page_size:
+                    break
+                offset += page_size
+            return rows
+
+        nodes = _fetch_all("nodes", "id, x, z, node_type, terrain_tag, is_discovered")
+        edges = _fetch_all("map_edges", "from_node_id, to_node_id")
+        # 거점(Station) 식별용: base_locations 멤버십 (node_id 기준). 일반 타일과 구분한다.
+        stations = _fetch_all("base_locations", "node_id, name, location_usage")
+        return {"nodes": nodes, "edges": edges, "stations": stations}
+    except Exception as e:
+        logger.error(f"get_map_graph failed: {e}")
+        return {"nodes": [], "edges": [], "stations": []}

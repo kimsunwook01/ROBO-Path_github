@@ -12,3 +12,6 @@
     # pip freeze > requirements.txt
     # 해당 명령어는 pip install로 설치한 기록만 확인하고 갱신한다.
 
+# 맥미니 원격 접속을 위한 아이디 ip
+    # ID: [sunwook]
+    # IP: [192.168.219.119]ㄴ
