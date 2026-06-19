@@ -14,6 +14,10 @@ class UnityWebSocketBridge:
     """
     def __init__(self):
         self.host = os.getenv("SIMULATOR_HOST", "127.0.0.1")
+        # 0.0.0.0 은 서버 바인드(수신) 전용 주소라 '접속' 대상으로는 쓸 수 없다(특히 Windows).
+        # Unity 서버는 0.0.0.0 으로 바인드해도, 클라이언트는 루프백으로 접속한다.
+        if self.host == "0.0.0.0":
+            self.host = "127.0.0.1"
         self.port = os.getenv("SIMULATOR_WS_PORT", "8765")
         self.uri = f"http://{self.host}:{self.port}/"
 

@@ -20,5 +20,10 @@ namespace ROBOPath.Robot
         {
             Debug.Log($"[Telemetry] Node discovered at: {nodePos}");
         }
+
+        public void EmitMissionFailed(string robotId, string toNodeId, string reason)
+        {
+            Debug.LogWarning($"[Telemetry] MISSION FAILED: {robotId} -> {toNodeId} (reason: {reason})");
+        }
     }
 }

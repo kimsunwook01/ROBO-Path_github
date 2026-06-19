@@ -62,6 +62,67 @@ def _handle_discovery(disc: dict):
         logger.error(f"DISCOVERY: failed to mark node {str(node.id)[:8]} discovered.")
 
 
+def _handle_mission_failed(payload: dict):
+    """
+    MISSION_FAILED 처리 (도달 불가로 임무 실패):
+    1) 해당 활성 임무를 Failed 로 표시하고
+    2) 로봇을 Idle 로 되돌린 뒤
+    3) 다음 임무를 재배정해 연속 주행 루프가 끊기지 않게 한다.
+    payload = {"robot_id": "<robot name>", "to_node_id": "<scene dump dest id>", "reason": "..."}
+    """
+    import uuid as _uuid
+    robot_name = payload.get("robot_id")
+    to_node_id_raw = payload.get("to_node_id")
+    reason = payload.get("reason", "unreachable")
+
+    if not robot_name:
+        logger.error(f"MISSION_FAILED payload missing robot_id: {payload}")
+        return
+
+    db_client = get_supabase_admin_client()
+    from src.infrastructure.database.supabase_mission_repo import SupabaseMissionRepository
+    from src.infrastructure.database.supabase_robot_repo import SupabaseRobotRepository
+    from src.infrastructure.database.supabase_node_repo import SupabaseNodeRepository
+    from src.application.services.mission_assignment_service import MissionAssignmentService
+    from src.application.services.path_planning_service import PathPlanningService
+
+    mission_repo = SupabaseMissionRepository(db_client)
+    robot_repo = SupabaseRobotRepository(db_client)
+    node_repo = SupabaseNodeRepository(db_client)
+    edge_repo = SupabaseEdgeRepository(db_client)
+    path_service = PathPlanningService(node_repo, edge_repo)
+    assignment_service = MissionAssignmentService(node_repo, mission_repo, robot_repo, path_service)
+
+    robot = robot_repo.get_robot_by_name(robot_name)
+    if not robot:
+        logger.error(f"MISSION_FAILED: robot '{robot_name}' not found.")
+        return
+
+    # 1) 활성 임무 Failed 처리 (목적지 기준 조회 후 해당 로봇 것인지 확인)
+    if to_node_id_raw:
+        try:
+            to_node_id = str(_uuid.UUID(to_node_id_raw))
+        except ValueError:
+            to_node_id = str(_uuid.uuid5(_uuid.NAMESPACE_OID, to_node_id_raw))
+
+        active = mission_repo.get_active_mission_by_destination(to_node_id)
+        if active and str(active.robot_id) == str(robot.id):
+            mission_repo.update_status(active.id, "Failed")
+            active.status = "Failed"
+            active.completed_at = datetime.utcnow()
+            mission_repo.update_mission(active)
+            logger.info(f"MISSION_FAILED: mission {active.id} marked Failed (reason={reason}).")
+        else:
+            logger.warning(f"MISSION_FAILED: no matching active mission for {robot_name} -> {to_node_id_raw}.")
+
+    # 2) 로봇 Idle 로 (assign_next_mission 은 Idle 상태만 처리)
+    robot_repo.update_robot_status(robot.id, "Idle")
+
+    # 3) 다음 임무 재배정 (루프 지속). 목적지는 랜덤 셔플되므로 대개 다른(완주 가능한) 곳으로 간다.
+    logger.info(f"MISSION_FAILED: reassigning next mission for {robot_name} (reason={reason})...")
+    assignment_service.assign_next_mission(robot_name)
+
+
 def main():
     if len(sys.argv) < 2:
         logger.error("No JSON payload provided.")
@@ -81,6 +142,13 @@ def main():
     # '발견됨'으로 표시한다. FEEDBACK과 달리 임무/배터리 로직은 거치지 않는다.
     if payload_type == "DISCOVERY":
         _handle_discovery(data.get("data", {}))
+        sys.exit(0)
+
+    # === MISSION_FAILED 분기 ===
+    # 로봇이 최종 목적지에 도달하지 못했을 때(경로 막힘/끊김) Unity가 보낸다.
+    # 임무를 Failed 처리하고 로봇에 다음 임무를 재배정해 루프가 멈추지 않게 한다.
+    if payload_type == "MISSION_FAILED":
+        _handle_mission_failed(data.get("data", {}))
         sys.exit(0)
 
     if payload_type != "FEEDBACK":

@@ -133,6 +133,7 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
     - [x] [STEP 2] Python→Unity 명령 송신 브릿지 (`ros2_bridge/bridge.py`, HTTP POST) + `MissionAssignmentService` 연동 (A* 경로 → 웨이포인트 송신)
     - [x] [STEP 3] Unity 피드백 송신 Sink (`Network/SubprocessTelemetrySink.cs`) — 도착/발견 시 `push_feedback.py` 서브프로세스 호출
     - [x] [STEP 4] 피드백 파이프라인 (Unity $\rightarrow$ Python Subprocess $\rightarrow$ Supabase) 기반 확립 (`push_feedback.py`) — FEEDBACK/DISCOVERY 분기, 엣지 매핑+폴백, 연속 임무 재배정
+    - [x] [STEP 5] 임무 실패/재배정 이벤트 (도달 불가 견고화, 2026-06-19, Unity 에디터 실동작 검증 완료) — 로봇이 최종 목적지에 도달하지 못하면(NavMeshAgent STUCK: 경로 막힘/끊김) `MISSION_FAILED` 이벤트를 발신하고, `push_feedback.py`가 해당 임무를 Failed 처리 + 로봇을 Idle 로 복귀 + 다음 임무 재배정한다. 과거엔 도달 실패 시 조용히 멈춰 FEEDBACK 도 다음 임무도 없이 그 로봇의 주행 루프가 영구 정지하던 문제 해결. (Unity: `ITelemetrySink.EmitMissionFailed` 인터페이스 추가 + Log/Subprocess Sink 구현 + `RobotController` 최종 웨이포인트 STUCK 분기; Python: `push_feedback.py` MISSION_FAILED 분기; `bridge.py` 는 `SIMULATOR_HOST=0.0.0.0` 을 접속 시 루프백으로 정규화)
     - [x] RLS(Row Level Security) 쓰기 권한 우회를 위한 `service_role` 클라이언트 적용
   - [x] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축 (완료 2026-06-19, 실 Mac 러너 등록 + 전 구간 자동 배포 GREEN 검증 완료)
     - [x] `.github/workflows/deploy-to-mac.yml` 작성 (runs-on [self-hosted, macOS, ARM64], 코드 pull → Secrets .env → conda 의존성+pytest 게이트 → launchd 설치 → kickstart -k 재시작 → 리포트)
@@ -164,7 +165,7 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
       - **Hazard Area:** `HazardTileController` 가 NavMeshObstacle carving 으로 활성 시 NavMesh 를 동적으로 도려내 통행 차단, 비활성 시 복원(에디터 재베이크 불필요).
     - [x] `RobotController.cs` 수정: `ApplyPlatformAreaMask()` 추가(Awake 호출), 도달 반경 8m→3.5m/5m 축소(칸 건너뛰고 대각선 질러가기 완화)
     - [x] **검증 완료(실제 플레이 테스트):** 휠 로봇이 계단/도로를 한 번도 침범하지 않고 횡단보도로만 도로를 건넘. 장애물 타일 활성/비활성에 따라 NavMesh 가 동적으로 길을 막거나 엶. 경사/장애물/도로가 각각 다른 색으로 베이크됨.
-    - 비고: 횡단보도 없이 도로로만 둘러싸인 목적지(현재 맵엔 없음) 및 장애물로 모든 경로 차단 시 → 향후 임무 실패/재배정 로직으로 대응(맵이 올바르게 동작한 증거). 보행 로봇은 도로 통행 가능하므로 그런 목적지 전담 가능.
+    - 비고: 횡단보도 없이 도로로만 둘러싸인 목적지(현재 맵엔 없음) 및 장애물로 모든 경로 차단 시 → **임무 실패/재배정 로직으로 대응(Phase 4 STEP 5에서 구현 완료)** — 도달 불가 시 MISSION_FAILED → Failed 처리 → 다음 임무 재배정으로 루프 지속. 보행 로봇은 도로 통행 가능하므로 그런 목적지 전담 가능.
 - [x] **9. 에지 서버(라즈베리파이) 인프라 구현 (`src/infrastructure/storage/`)**
   - [x] GitHub Actions CI/CD 구축, SSD 마운트, FastAPI 구현, Systemd/Nginx 세팅 완료
 
@@ -172,7 +173,7 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
 프로젝트 전체 파일 열람 검사에서 발견된, 추후 정리가 필요한 항목들:
 - **stale 테스트 (해결— 2026-06-19):** `tests/test_push_feedback.py` 정합화 완료. 감사 시점엔 1건만 stale로 판단했으나, 실제 실행 검증 결과 `push_feedback.py`의 로깅이 `StreamHandler(sys.stdout)`로 stdout에 찍히는데 어서션은 stderr를 보고 있어 4개 중 3개(invalid_json/ignore/missing_fields)가 실제로 깨져 있었고, DISCOVERY는 이제 정식 처리되어 과거 메시지가 폐기됨. 수정 내용: (1) 메시지 검사를 stdout+stderr 합산으로 전환, (2) DISCOVERY 정식 처리/unknown 무시 동작을 반영해 케이스 재작성, (3) 서브프로세스에 cwd/PYTHONPATH 주입으로 `from src...` 절대 임포트를 호출 환경과 무관하게 해결, (4) 실 DB 쓰기를 수반하는 해피패스는 `ROBOPATH_RUN_DB_TESTS` 옵트인으로 분리. 검증: 4 passed, 1 skipped.
 - **중복 마이그레이션:** `supabase/migrations/`에 동일 타임스탬프(20260618030000) `add_discovery.sql`과 `add_discovery_columns.sql` 공존. 후자가 정본(컬럼 + `idx_nodes_xz` 인덱스). 전자의 고유분(거점 `is_discovered` UPDATE)은 `map_import_service.py`의 import-time `is_discovered=True`와 기능 중복. → `add_discovery.sql` 삭제 권장(단, 원격 DB 마이그레이션 히스토리 정합성 확인 후).
-- **대시보드 맵 시각화:** `presentation/dashboard/app.py` 중앙 맵은 아직 랜덤 Plotly 목업이며 일부 텔레메트리(경과시간 등) 하드코딩. 데이터 계층(`mock_data.py`)은 실제 Supabase 연동 완료(Spec D). 맵 실연동은 후속 과제.
+- **대시보드 맵 시각화 (해결 — 2026-06-19):** `presentation/dashboard/app.py` 중앙 맵을 실제 맵 데이터 연동으로 교체 완료. `mock_data.py`에 `get_map_graph()` 추가(nodes/map_edges/base_locations 범위 페이지네이션으로 PostgREST 1000행 한계 우회), 지형 태그별 색상 + Fog of War(미발견 노드 반투명) 탑뷰 렌더링, 거점은 base_locations 멤버십으로 식별(맵 임포트가 타일·거점 모두 node_type=BASE 로 주는 문제 회피), 엣지는 기본 OFF(약 20만 개라 켜면 샘플링). 잔여 하드코딩(경과시간 등 일부 텔레메트리)과 로봇 실시간 위치 오버레이는 위치 컬럼/텔레메트리 부재로 후속 과제로 남김.
 - **LLM 파이프라인 (런타임 통합 제외 — 2026-06-19 결정):** `infrastructure/llm/gemini_client.py` 모듈은 구현됐으나 런타임 연동(incidents 적재 + 대시보드 분석 UI)은 미연결. LLM_Pipeline_Design 명세 범위(모듈 작성)와는 일치한다. **런타임 통합은 구현 우선순위가 낮아 현재 범위에서 의도적으로 제외**되었으며, '후속 과제'가 아닌 보류(De-scoped) 상태로 둔다. 우선순위가 재조정되면 재개한다.
 
 > **Update Rule:** 이 파일은 프로젝트의 주요 마일스톤이 달성되거나 아키텍처 정책이 변경될 때마다 AI에 의해 갱신되어야 합니다.

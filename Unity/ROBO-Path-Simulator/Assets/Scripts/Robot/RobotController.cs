@@ -351,7 +351,7 @@ namespace ROBOPath.Robot
             }
             else
             {
-                // 디버그: NavMeshAgent가 멈춰있는데 아직 도달 못 한 경우
+                // NavMeshAgent가 멈춰있는데 아직 도달 못 한 경우 (경로 막힘/끊김)
                 if (!agent.pathPending && !agent.hasPath && agent.velocity.sqrMagnitude < 0.01f)
                 {
                     Debug.LogWarning($"[RobotController] {identify.robotId}: STUCK at wp {currentWaypointIndex}/{totalWaypoints} " +
@@ -359,10 +359,29 @@ namespace ROBOPath.Robot
                         $"robot=({transform.position.x:F1},{transform.position.y:F1},{transform.position.z:F1}) " +
                         $"target=({currentWaypoint.Value.x:F1},{currentWaypoint.Value.y:F1},{currentWaypoint.Value.z:F1})");
 
-                    // 도달하지 못한 웨이포인트를 건너뛰고 다음으로 진행
-                    Debug.LogWarning($"[RobotController] {identify.robotId}: skipping unreachable waypoint, advancing...");
                     agent.ResetPath();
-                    AdvanceToNextWaypoint();
+
+                    if (isFinalWaypoint)
+                    {
+                        // 최종 목적지 도달 실패 → 조용히 멈추지 않고 MISSION_FAILED 를 보고한 뒤 정지한다.
+                        // (이 신호가 있어야 push_feedback.py 가 임무를 Failed 처리하고 다음 임무를 재배정한다.
+                        //  과거엔 여기서 그냥 멈춰 FEEDBACK 도 다음 임무도 없이 그 로봇 루프가 영구 정지했다.)
+                        currentWaypoint = null;
+                        isNavigating = false;
+
+                        Debug.LogWarning($"[RobotController] {identify.robotId}: FINAL destination {finalDestNodeId} UNREACHABLE — emitting MISSION_FAILED");
+
+                        if (!manualInterventionOccurred && telemetrySink != null)
+                            telemetrySink.EmitMissionFailed(identify.robotId, finalDestNodeId, "unreachable");
+                        else if (telemetrySink == null)
+                            Debug.LogWarning($"[RobotController] {identify.robotId}: telemetrySink is NULL — MISSION_FAILED not sent");
+                    }
+                    else
+                    {
+                        // 중간 웨이포인트는 건너뛰고 다음으로 진행 (기존 동작 유지)
+                        Debug.LogWarning($"[RobotController] {identify.robotId}: skipping unreachable waypoint, advancing...");
+                        AdvanceToNextWaypoint();
+                    }
                 }
             }
         }

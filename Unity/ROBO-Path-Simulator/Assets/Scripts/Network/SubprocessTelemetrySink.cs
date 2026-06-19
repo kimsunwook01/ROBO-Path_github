@@ -93,6 +93,21 @@ namespace ROBOPath.Network
             FireAndForgetPython(finalJson);
         }
 
+        public void EmitMissionFailed(string robotId, string toNodeId, string reason)
+        {
+            // 최종 목적지 도달 실패 시 호출. push_feedback.py 가 해당 임무를 Failed 처리하고
+            // 로봇을 Idle 로 되돌린 뒤 다음 임무를 재배정해 연속 주행 루프가 끊기지 않게 한다.
+            // 필드값은 단순 문자열(로봇 이름/ID)이므로 큰따옴표만 제거해 안전하게 직접 구성한다.
+            string safeRobot = (robotId ?? "").Replace("\"", "");
+            string safeDest = (toNodeId ?? "").Replace("\"", "");
+            string safeReason = (reason ?? "").Replace("\"", "");
+            string json = $"{{\"robot_id\":\"{safeRobot}\",\"to_node_id\":\"{safeDest}\",\"reason\":\"{safeReason}\"}}";
+            string finalJson = $"{{\"type\":\"MISSION_FAILED\",\"data\":{json}}}";
+
+            Debug.LogWarning($"[SubprocessTelemetrySink] Sending MISSION_FAILED: {finalJson}");
+            FireAndForgetPython(finalJson);
+        }
+
         private async void FireAndForgetPython(string jsonArgs)
         {
             await Task.Run(() =>

@@ -9,8 +9,10 @@ namespace ROBOPath.Tests.PlayMode
     public class MockTelemetrySink : MonoBehaviour, ITelemetrySink
     {
         public int DiscoveryCount = 0;
+        public int MissionFailedCount = 0;
         public void EmitFeedback(RobotPlatform platform, string fromNodeId, string toNodeId, float? load, float? stability, float? efficiency, float batteryPct) {}
         public void EmitDiscovery(Vector3 nodePos) { DiscoveryCount++; }
+        public void EmitMissionFailed(string robotId, string toNodeId, string reason) { MissionFailedCount++; }
     }
 
     public class RaycastScannerTests
