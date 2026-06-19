@@ -88,7 +88,7 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
 - [x] **6. LLM 기반 피드백 지식화 파이프라인 (`src/infrastructure/llm/`)**
   - [x] Google Gemini API 연동 모듈 작성 (자연어 피드백 -> 구조화된 JSON)
   - [~] **런타임 통합 보류 (2026-06-19 결정):** 모듈(`gemini_client.py`) 작성까지만 완료하고, 런타임 연동(incidents 적재 + 대시보드 분석 UI + 엣지 페널티 환류)은 **현재 구현 범위에서 의도적으로 제외**한다. 본 프로젝트에서 LLM 파이프라인의 구현 우선순위가 낮다고 판단한 결정이며, 추후 우선순위가 재조정될 경우 재개한다.
-- [ ] **7. Unity 시뮬레이터 연동 및 구축 (`Unity/`)**
+- [x] **7. Unity 시뮬레이터 연동 및 구축 (`Unity/`)** — Phase 1~5 전부 완료(맵/로봇/통신 브릿지/피드백 루프 + macOS 자동 배포 파이프라인)
   - [x] [Phase 1] Unity 프로젝트 생성 및 GitHub 연동 (.gitignore 설정)
   - [x] [Phase 2] 메인 캠퍼스 맵 제작 및 파이프라인 구축 완료
     - [x] 블록 프리팹 25종(평지/경사/계단/차도/차도경사 × 높이 5) 및 타일 5종(거점3/횡단보도/장애물) 제작 완료
@@ -134,13 +134,17 @@ Unity 기반 작업 중 의도치 않은 파일 변경이 발생하여 사용자
     - [x] [STEP 3] Unity 피드백 송신 Sink (`Network/SubprocessTelemetrySink.cs`) — 도착/발견 시 `push_feedback.py` 서브프로세스 호출
     - [x] [STEP 4] 피드백 파이프라인 (Unity $\rightarrow$ Python Subprocess $\rightarrow$ Supabase) 기반 확립 (`push_feedback.py`) — FEEDBACK/DISCOVERY 분기, 엣지 매핑+폴백, 연속 임무 재배정
     - [x] RLS(Row Level Security) 쓰기 권한 우회를 위한 `service_role` 클라이언트 적용
-  - [~] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축 (저장소 측 산출물 작성 완료 2026-06-19, 실 Mac 러너 등록·검증 대기)
+  - [x] [Phase 5] macOS 환경 GitHub Actions 자동 배포 파이프라인 구축 (완료 2026-06-19, 실 Mac 러너 등록 + 전 구간 자동 배포 GREEN 검증 완료)
     - [x] `.github/workflows/deploy-to-mac.yml` 작성 (runs-on [self-hosted, macOS, ARM64], 코드 pull → Secrets .env → conda 의존성+pytest 게이트 → launchd 설치 → kickstart -k 재시작 → 리포트)
-    - [x] `scripts/run_simulator.sh` (헤드리스 Unity 실행; launchd supervise 위해 `&` 대신 `exec` 포그라운드 실행)
-    - [x] `config/mac_services/com.robopath.simulator.plist` (사용자 LaunchAgent, KeepAlive, __HOME__ 치환 템플릿 — sudo 불필요)
+    - [x] `scripts/run_simulator.sh` (헤드리스 Unity 실행; launchd supervise 위해 `&` 대신 `exec` 포그라운드 실행). **`ROBOPATH_PYTHON` 절대경로 export 추가** — SubprocessTelemetrySink 의 파이썬 경로 추정이 Windows 전용(USERPROFILE/python.exe)이라 Mac 에서 피드백 서브프로세스가 실패하던 문제를 C# 1순위 오버라이드 환경변수로 해결.
+    - [x] `config/mac_services/com.robopath.simulator.plist` (사용자 LaunchAgent, KeepAlive, __HOME__ 치환 템플릿 — sudo 불필요). EnvironmentVariables 에 ROBOPATH_ROOT/ROBOPATH_PYTHON 주입.
     - [x] Unity 헤드리스 진입점 `SimulatorLauncher.RunHeadless` (Debug/Editor, CampusMainMap 로드 → delayCall EnterPlaymode)
     - [x] 러너 라벨 충돌 방지: 기존 `deploy-to-pi.yml` 의 runs-on 을 [self-hosted, Linux, ARM64] 로 분리
-    - [ ] (사용자/실 Mac) macOS self-hosted runner 등록, GitHub Secrets(SUPABASE_SERVICE_KEY 포함) 설정, Unity 6000.4.11f1+conda 설치, `SimulatorLauncher.cs.meta` 생성 커밋, 헤드리스 플레이모드 실동작 검증
+    - [x] **(실 Mac) 환경 구축·검증 완료:** conda `robopath`(py3.12) 생성 + `pytest tests/` 42 passed/1 skipped, Unity 6000.4.11f1 + Mac Build Support(IL2CPP) 설치, 헤드리스 플레이모드 실동작 확인(RunHeadless→씬 로드→플레이), 피드백 루프 E2E 확인(`push_feedback.log` Supabase 200 OK + DISCOVERY 처리)
+    - [x] **(실 Mac) self-hosted runner 등록** — `self-hosted, macOS, ARM64` 라벨, `svc.sh` 사용자 LaunchAgent 서비스로 상시 구동(로그인 세션 필요)
+    - [x] **(실 Mac) GitHub Secrets 설정** — SUPABASE_URL/KEY/SERVICE_KEY 3개로 충분. GEMINI_API_KEY/EDGE_SERVER_URL 은 미생성(없는 secret 참조 시 빈 문자열 치환 → LLM 미사용·Pi 미연동이라 무해)
+    - [x] **launchd 재시작 멱등화 (deploy 핵심 버그픽스):** 이미 로드된 에이전트를 다시 bootstrap 하면 `Bootstrap failed: 5: Input/output error` 로 단계가 깨지던 문제 → bootout/bootstrap/kickstart 를 모두 `|| true` 로 감싸고 `kickstart -k` 가 실제 재시작을 담당, 마지막에 `launchctl print` 로 로드 여부만 검증하도록 변경
+    - [x] **전 구간 자동 배포 GREEN 확인** — main push → 러너 자동 pull → Secrets .env 생성 → pytest 게이트 통과 → launchd 설치 → 헤드리스 시뮬레이터 재시작까지 Actions 전 단계 성공
 - [ ] **8. 관제 대시보드 UI 및 통신 브릿지 구축 (`src/presentation/`)**
   - [x] Data Contract 정의 (`ROBO-Path_Dashboard_Data_Contract.md`)
   - [x] Streamlit 관제 대시보드 1차 UI 목업 구현 (`app.py`, 3분할 독립 스크롤 레이아웃 및 토글 기능 완성)
